@@ -21,7 +21,7 @@ public class CalculoAmortizacaoService {
             BigDecimal juros = saldo.multiply(taxa).setScale(2, RoundingMode.HALF_UP);
             BigDecimal parcela = amortizacao.add(juros).setScale(2, RoundingMode.HALF_UP);
             saldo = saldo.subtract(amortizacao);
-            parcelas.add(new Parcela(i, amortizacao.doubleValue(), juros.doubleValue(), parcela.doubleValue()));
+            parcelas.add(new Parcela(i, amortizacao, juros, parcela));
         }
         return parcelas;
     }
@@ -38,7 +38,7 @@ public class CalculoAmortizacaoService {
             BigDecimal juros = saldo.multiply(taxa).setScale(2, RoundingMode.HALF_UP);
             BigDecimal amortizacao = parcelaConstante.subtract(juros).setScale(2, RoundingMode.HALF_UP);
             saldo = saldo.subtract(amortizacao);
-            parcelas.add(new Parcela(i, amortizacao.doubleValue(), juros.doubleValue(), parcelaConstante.doubleValue()));
+            parcelas.add(new Parcela(i, amortizacao, juros, parcelaConstante));
         }
         return parcelas;
     }

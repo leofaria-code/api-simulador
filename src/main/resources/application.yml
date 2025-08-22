@@ -1,6 +1,6 @@
 # Configuração Geral
 server:
-  port: 8080
+  port: ${SERVER_PORT:8080}
 
 spring:
   application:
@@ -11,9 +11,9 @@ spring:
     datasource:
       type: com.zaxxer.hikari.HikariDataSource
       driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-      url: jdbc:sqlserver://dbhackathon.database.windows.net:1433;databaseName=hack;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
-      username: hack
-      password: Password23
+      url: jdbc:sqlserver://${DB_URL}:${DB_PORT};databaseName=${DB_NAME};encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
+      username: ${DB_USERNAME}
+      password: ${DB_PASSWORD}
       hikari:
         maximum-pool-size: 20
         minimum-idle: 5
@@ -37,13 +37,13 @@ spring:
     datasource:
       driver-class-name: org.h2.Driver
       url: jdbc:h2:mem:simulacao;DB_CLOSE_DELAY=-1
-      username: sa
-      password: password
+      username: ${H2_USERNAME}
+      password: ${H2_PASSWORD}
     jpa:
       open-in-view: false
       database-platform: org.hibernate.dialect.H2Dialect
       hibernate:
-        ddl-auto: create-drop
+        ddl-auto: update
       properties:
         hibernate:
           dialect: org.hibernate.dialect.H2Dialect
@@ -65,9 +65,9 @@ spring:
 
   datasource:
     principal-sqlserver:
-      jdbc-url: jdbc:sqlserver://dbhackathon.database.windows.net:1433;databaseName=hack;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
-      username: hack
-      password: Password23
+      jdbc-url: jdbc:sqlserver://${DB_URL}:${DB_PORT};databaseName=${DB_NAME};encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
+      username: ${DB_USERNAME}
+      password: ${DB_PASSWORD}
       driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
       type: com.zaxxer.hikari.HikariDataSource
       hikari:
@@ -79,22 +79,19 @@ spring:
 
   second-datasource:
     local-h2:
-      jdbc-url: jdbc:h2:mem:simulacao;DB_CLOSE_DELAY=-1
-      username: sa
-      password: password
+      jdbc-url: ${H2_URL};DB_CLOSE_DELAY=-1
+      username: ${H2_USERNAME}
+      password: ${H2_PASSWORD}
       driver-class-name: org.h2.Driver
 
 # Configuração do Azure Event Hub
 azure:
   eventhub:
-    connection-string: Endpoint=sb://eventhack.servicebus.windows.net/;SharedAccessKeyName=hack;SharedAccessKey=HeHeVaVqyVkntO2FnjQcs2Ilh/4MUDo4y+AEhKp8z+g=;EntityPath=simulacoes
-    entity-path: simulacoes
-    name: simulacoes
-    enabled: true  # mude para false para desabilitar
+    connection-string: ${AZURE_EVENTHUB_CONNECTION_STRING}
+    entity-path: ${AZURE_EVENTHUB_ENTITY_PATH}
+    name: ${AZURE_EVENTHUB_NAME}
+    enabled: true
 
 logging:
   level:
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
-    com.zaxxer.hikari: DEBUG
-    br.com.leo.apisimulador: DEBUG
+    org.hibernate.SQL: ${SHOW_SQL:false}

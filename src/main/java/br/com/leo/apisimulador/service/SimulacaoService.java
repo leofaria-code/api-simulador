@@ -1,94 +1,127 @@
 package br.com.leo.apisimulador.service;
 
-import br.com.leo.apisimulador.dto.Parcela;
-import br.com.leo.apisimulador.dto.ResultadoSimulacao;
-import br.com.leo.apisimulador.dto.SimulacaoRequest;
-import br.com.leo.apisimulador.dto.SimulacaoResponse;
-import br.com.leo.apisimulador.dto.TipoSimulacao;
+import br.com.leo.apisimulador.dto.*;
 import br.com.leo.apisimulador.model.h2.Simulacao;
 import br.com.leo.apisimulador.model.sqlserver.Produto;
-import br.com.leo.apisimulador.repository.sqlserver.ProdutoRepository;
 import br.com.leo.apisimulador.repository.h2.SimulacaoRepository;
+import br.com.leo.apisimulador.repository.sqlserver.ProdutoRepository;
 import com.azure.messaging.eventhubs.EventData;
 import com.azure.messaging.eventhubs.EventHubProducerClient;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.jetbrains.annotations.NotNull;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class SimulacaoService {
+    
     private final ProdutoRepository produtoRepository;
     private final SimulacaoRepository simulacaoRepository;
     private final CalculoAmortizacaoService calculoService;
     private final EventHubProducerClient eventHubProducerClient;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
     
-    public SimulacaoResponse simular(SimulacaoRequest request) {
+    @Transactional
+    public SimulacaoResponse simular(SimulacaoRequest requisicao) {
         try {
-            // 1. Buscar produto válido
-            Produto produto = produtoRepository.findAll().stream()
-                .filter(p ->
-                    request.getValorDesejado().doubleValue() >= p.getValorMinimo().doubleValue() &&
-                        request.getValorDesejado().doubleValue() <= p.getValorMaximo().doubleValue() &&
-                        request.getPrazo() >= p.getMinimoMeses() &&
-                        request.getPrazo() <= p.getMaximoMeses())
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Nenhum produto encontrado para os parâmetros informados."));
+            Produto produto = buscarProdutoElegivel(requisicao);
+            List<ResultadoSimulacao> resultados = calcularSimulacoes(requisicao, produto);
             
-            // 2. Calcular simulações
-            List<Parcela> parcelasSAC = calculoService.calcularSAC(request.getValorDesejado(), produto.getTaxaJuros(), request.getPrazo());
-            List<Parcela> parcelasPRICE = calculoService.calcularPRICE(request.getValorDesejado(), produto.getTaxaJuros(), request.getPrazo());
+            // Criar e persistir a simulação
+            Simulacao simulacao = criarSimulacao(requisicao, produto);
             
-            // 3. Montar a resposta no novo formato JSON
-            var response = getSimulacaoResponse(parcelasSAC, parcelasPRICE, produto);
+            // Criar a resposta com o record
+            SimulacaoResponse resposta = new SimulacaoResponse(
+                null, // ID será atualizado após persistência
+                produto.getCodigoProduto(),
+                produto.getDescricaoProduto(),
+                produto.getTaxaJuros(),
+                resultados
+            );
             
-            // 4. Persistir no banco local
-            Simulacao sim = new Simulacao();
-            sim.setProduto(produto); // Agora usa a entidade Produto completa
-            sim.setValorDesejado(request.getValorDesejado());
-            sim.setPrazo(request.getPrazo());
-            sim.setResultadoJson(objectMapper.writeValueAsString(response));
-            simulacaoRepository.save(sim);
+            // Persistir a simulação
+            try {
+                simulacao.setResultadoJson(objectMapper.writeValueAsString(resposta));
+                simulacao = simulacaoRepository.save(simulacao);
+                
+                // Criar nova resposta com ID atualizado
+                resposta = new SimulacaoResponse(
+                    simulacao.getIdSimulacao(),
+                    produto.getCodigoProduto(),
+                    produto.getDescricaoProduto(),
+                    produto.getTaxaJuros(),
+                    resultados
+                );
+                
+                // Atualizar o JSON com o ID correto
+                simulacao.setResultadoJson(objectMapper.writeValueAsString(resposta));
+                simulacaoRepository.save(simulacao);
+                
+            } catch (Exception e) {
+                log.error("Erro ao persistir simulação: {}", e.getMessage(), e);
+                throw new RuntimeException("Falha ao persistir simulação", e);
+            }
             
-            // 5. Enviar para EventHub
-            enviarParaEventHub(sim.getResultadoJson());
+            enviarParaEventHub(simulacao.getResultadoJson());
             
-            return response;
+            return resposta;
             
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("Erro ao serializar resposta: " + e.getMessage(), e);
         } catch (Exception e) {
-            // Log do erro e tratamento apropriado
-            throw new RuntimeException("Erro ao processar simulação: " + e.getMessage(), e);
+            log.error("Erro ao processar simulação: {}", e.getMessage(), e);
+            throw new RuntimeException("Falha ao processar simulação: " + e.getMessage(), e);
         }
     }
     
-    @NotNull
-    private static SimulacaoResponse getSimulacaoResponse(List<Parcela> parcelasSAC, List<Parcela> parcelasPRICE, Produto produto) {
-        ResultadoSimulacao resultadoSac = new ResultadoSimulacao(TipoSimulacao.SAC, parcelasSAC);
-        ResultadoSimulacao resultadoPrice = new ResultadoSimulacao(TipoSimulacao.PRICE, parcelasPRICE);
-        List<ResultadoSimulacao> resultados = List.of(resultadoSac, resultadoPrice);
-        
-        return new SimulacaoResponse(
-            
-            produto.getCodigoProduto(),
-            produto.getDescricaoProduto(),
+    private Produto buscarProdutoElegivel(SimulacaoRequest requisicao) {
+        return produtoRepository.findAll().stream()
+            .filter(p -> isProdutoElegivel(p, requisicao))
+            .findFirst()
+            .orElseThrow(() ->
+                new IllegalArgumentException("Nenhum produto encontrado para os parâmetros informados."));
+    }
+    
+    private boolean isProdutoElegivel(Produto produto, SimulacaoRequest requisicao) {
+        return requisicao.valorDesejado().compareTo(produto.getValorMinimo()) >= 0 &&
+            requisicao.valorDesejado().compareTo(produto.getValorMaximo()) <= 0 &&
+            requisicao.prazo() >= produto.getMinimoMeses() &&
+            requisicao.prazo() <= produto.getMaximoMeses();
+    }
+    
+    private List<ResultadoSimulacao> calcularSimulacoes(SimulacaoRequest requisicao, Produto produto) {
+        List<Parcela> parcelasSAC = calculoService.calcularSAC(
+            requisicao.valorDesejado(),
             produto.getTaxaJuros(),
-            resultados
-        );
+            requisicao.prazo());
+        
+        List<Parcela> parcelasPRICE = calculoService.calcularPRICE(
+            requisicao.valorDesejado(),
+            produto.getTaxaJuros(),
+            requisicao.prazo());
+        
+        return List.of(
+            new ResultadoSimulacao(TipoSimulacao.SAC, parcelasSAC),
+            new ResultadoSimulacao(TipoSimulacao.PRICE, parcelasPRICE));
+    }
+    
+    private Simulacao criarSimulacao(SimulacaoRequest requisicao, Produto produto) {
+        Simulacao simulacao = new Simulacao();
+//        simulacao.setProduto(produto);
+        simulacao.setProdutoId(produto.getCodigoProduto());
+        simulacao.setValorDesejado(requisicao.valorDesejado());
+        simulacao.setPrazo(requisicao.prazo());
+        return simulacao;
     }
     
     private void enviarParaEventHub(String mensagem) {
         try {
-            EventData eventData = new EventData(mensagem);
-            eventHubProducerClient.send(List.of(eventData));
+            eventHubProducerClient.send(List.of(new EventData(mensagem)));
         } catch (Exception e) {
-            System.err.println("Erro ao enviar mensagem para EventHub: " + e.getMessage());
+            log.error("Erro ao enviar mensagem para EventHub: {}", e.getMessage(), e);
         }
     }
 }

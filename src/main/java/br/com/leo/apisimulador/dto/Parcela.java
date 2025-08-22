@@ -1,24 +1,10 @@
 package br.com.leo.apisimulador.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.math.BigDecimal;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class Parcela {
-    
-    @JsonProperty("numero")
-    private Integer numero;
-    
-    @JsonProperty("valorAmortizacao")
-    private Double valorAmortizacao;
-    
-    @JsonProperty("valorJuros")
-    private Double valorJuros;
-    
-    @JsonProperty("valorPrestacao")
-    private Double valorPrestacao;
-}
+public record Parcela(
+    int numero,
+    BigDecimal valorAmortizacao,
+    BigDecimal valorJuros,
+    BigDecimal valorPrestacao
+) {}
