@@ -1,0 +1,104 @@
+{
+  "info": {
+    "_postman_id": "b1c0a0c1-d2f1-4a3b-9c4c-a11b2b2c3d4e",
+    "name": "API Simulador de Empréstimos",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "12345678"
+  },
+  "item": [
+    {
+      "name": "Simulação de Empréstimo",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"valorDesejado\": 15000,\n    \"prazo\": 12\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/simulacoes",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "simulacoes"
+          ]
+        },
+        "description": "Endpoint para simular um empréstimo com base no valor desejado e prazo, utilizando as regras de negócio dos produtos disponíveis."
+      },
+      "response": []
+    },
+    {
+      "name": "Buscar Todas as Simulações",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/simulacoes",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "simulacoes"
+          ]
+        },
+        "description": "Retorna uma lista de todas as simulações que foram salvas no banco de dados local (H2)."
+      },
+      "response": []
+    },
+    {
+      "name": "Dados Agregados por Dia e Produto",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/simulacoes/agregado-por-dia-e-produto",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "simulacoes",
+            "agregado-por-dia-e-produto"
+          ]
+        },
+        "description": "Retorna um resumo de simulações, agrupado por produto e por dia, para análise de volume e comportamento."
+      },
+      "response": []
+    },
+    {
+      "name": "Dados de Telemetria",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/simulacoes/telemetria",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "simulacoes",
+            "telemetria"
+          ]
+        },
+        "description": "Endpoint para monitorar a saúde da API, retornando o volume de requisições e o tempo médio de resposta."
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8080"
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+services:
+  api-simulador:
+    build: .
+    container_name: api-simulador
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - DB_URL=${DB_URL}
+      - DB_PORT=${DB_PORT}
+      - DB=${DB}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SERVER_PORT=${SERVER_PORT}
+      - EVENTHUB_CONNECTION_STRING=${EVENTHUB_CONNECTION_STRING}
+      - EVENTHUB_ENTITY_PATH=${EVENTHUB_ENTITY_PATH}
+      - EVENTHUB_NAME=${EVENTHUB_NAME}
+      - SPRING_PROFILES_ACTIVE=prod
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    networks:
+      - simulador-network
+
+  # Optional: Local SQL Server for development (comentado por usar Azure)
+  # sqlserver:
+  #   image: mcr.microsoft.com/mssql/server:2022-latest
+  #   container_name: sqlserver-local
+  #   environment:
+  #     - ACCEPT_EULA=Y
+  #     - SA_PASSWORD=Password123!
+  #   ports:
+  #     - "1433:1433"
+  #   volumes:
+  #     - sqlserver_data:/var/opt/mssql
+  #   networks:
+  #     - simulador-network
+
+  # Monitoring (opcional)
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    networks:
+      - simulador-network
+    depends_on:
+      - api-simulador
+
+networks:
+  simulador-network:
+    driver: bridge
+
+volumes:
+  sqlserver_data:
