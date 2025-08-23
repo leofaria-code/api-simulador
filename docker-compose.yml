@@ -7,16 +7,32 @@ services:
     env_file:
       - .env
     environment:
-      - DB_URL=${DB_URL}
-      - DB_PORT=${DB_PORT}
-      - DB=${DB}
-      - DB_USERNAME=${DB_USERNAME}
-      - DB_PASSWORD=${DB_PASSWORD}
-      - SERVER_PORT=${SERVER_PORT}
-      - EVENTHUB_CONNECTION_STRING=${EVENTHUB_CONNECTION_STRING}
-      - EVENTHUB_ENTITY_PATH=${EVENTHUB_ENTITY_PATH}
-      - EVENTHUB_NAME=${EVENTHUB_NAME}
+      # Configurações JVM
+      - JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseG1GC
+      # Perfil Spring
       - SPRING_PROFILES_ACTIVE=prod
+      
+      # Configurações SQL Server Principal
+      - SPRING_DATASOURCE_PRINCIPAL-SQLSERVER_URL=jdbc:sqlserver://${DB_URL}:${DB_PORT};databaseName=${DB_NAME};encrypt=true;trustServerCertificate=true;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
+      - SPRING_DATASOURCE_PRINCIPAL-SQLSERVER_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PRINCIPAL-SQLSERVER_PASSWORD=${DB_PASSWORD}
+      
+      # Configurações H2
+      - SPRING_SECOND-DATASOURCE_LOCAL-H2_URL=${H2_URL}
+      - SPRING_SECOND-DATASOURCE_LOCAL-H2_USERNAME=${H2_USERNAME}
+      - SPRING_SECOND-DATASOURCE_LOCAL-H2_PASSWORD=${H2_PASSWORD}
+      - SPRING_H2_CONSOLE_ENABLED=true
+      - SPRING_H2_CONSOLE_PATH=/h2-console
+      
+      # Configurações Azure Event Hub  
+      - AZURE_EVENTHUB_CONNECTION-STRING=${AZURE_EVENTHUB_CONNECTION_STRING}
+      - AZURE_EVENTHUB_ENTITY-PATH=${AZURE_EVENTHUB_ENTITY_PATH}
+      - AZURE_EVENTHUB_NAME=${AZURE_EVENTHUB_NAME}
+      - AZURE_EVENTHUB_ENABLED=true
+      
+      # Configurações Logging
+      - LOGGING_LEVEL_ORG_HIBERNATE_SQL=${SHOW_SQL}
+
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
       interval: 30s
@@ -26,22 +42,15 @@ services:
     restart: unless-stopped
     networks:
       - simulador-network
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 768M
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
-  # Optional: Local SQL Server for development (comentado por usar Azure)
-  # sqlserver:
-  #   image: mcr.microsoft.com/mssql/server:2022-latest
-  #   container_name: sqlserver-local
-  #   environment:
-  #     - ACCEPT_EULA=Y
-  #     - SA_PASSWORD=Password123!
-  #   ports:
-  #     - "1433:1433"
-  #   volumes:
-  #     - sqlserver_data:/var/opt/mssql
-  #   networks:
-  #     - simulador-network
-
-  # Monitoring (opcional)
   prometheus:
     image: prom/prometheus:latest
     container_name: prometheus
@@ -49,17 +58,36 @@ services:
       - "9090:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
     networks:
       - simulador-network
     depends_on:
       - api-simulador
 
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    networks:
+      - simulador-network
+    depends_on:
+      - prometheus
+
+volumes:
+  prometheus_data:
+  grafana_data:
+
 networks:
   simulador-network:
     driver: bridge
-
-volumes:
-  sqlserver_data:

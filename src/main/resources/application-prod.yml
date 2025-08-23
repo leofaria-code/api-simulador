@@ -1,0 +1,11 @@
+spring:
+  h2:
+    console:
+      enabled: false  # Desabilita em produção
+      
+  datasource:
+    local-h2:
+      # Configurações mais seguras para produção
+      pool-size: 10
+      max-lifetime: 1800000
+      connection-timeout: 30000

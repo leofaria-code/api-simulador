@@ -17,7 +17,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -46,7 +45,6 @@ public class SimulacaoController {
     private final SimulacaoRepository repositorioSimulacao;
     private final ServicoTelemetria servicoTelemetria;
 
-    @Autowired
     public SimulacaoController(SimulacaoService servicoSimulacao,
             SimulacaoRepository repositorioSimulacao,
             ServicoTelemetria servicoTelemetria,

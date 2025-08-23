@@ -7,4 +7,4 @@ public record Parcela(
     BigDecimal valorAmortizacao,
     BigDecimal valorJuros,
     BigDecimal valorPrestacao
-) {}
+    ) {}

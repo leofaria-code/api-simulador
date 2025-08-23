@@ -55,6 +55,26 @@ spring:
     console:
       enabled: true
       path: /h2-console
+      settings:
+        web-allow-others: true
+        trace: false
+        web-admin-password: ${H2_ADMIN_PASSWORD:admin}
+  
+  datasource:
+    local-h2:
+      url: ${H2_URL:jdbc:h2:mem:simulacao}
+      username: ${H2_USERNAME:sa}
+      password: ${H2_PASSWORD:password}
+      driver-class-name: org.h2.Driver
+  
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: update
+    show-sql: ${SHOW_SQL:false}
+    properties:
+      hibernate:
+        format_sql: true
 
   sql:
     init:
@@ -65,7 +85,7 @@ spring:
 
   datasource:
     principal-sqlserver:
-      jdbc-url: jdbc:sqlserver://${DB_URL}:${DB_PORT};databaseName=${DB_NAME};encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
+      jdbc-url: jdbc:sqlserver://${DB_URL}:${DB_PORT};databaseName=${DB_NAME};encrypt=true;trustServerCertificate=true;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
       username: ${DB_USERNAME}
       password: ${DB_PASSWORD}
       driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
@@ -83,6 +103,20 @@ spring:
       username: ${H2_USERNAME}
       password: ${H2_PASSWORD}
       driver-class-name: org.h2.Driver
+
+# Configuração de Monitoramento
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      access: UNRESTRICTED
+    prometheus:
+      access: UNRESTRICTED
 
 # Configuração do Azure Event Hub
 azure:
