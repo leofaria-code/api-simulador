@@ -130,10 +130,60 @@ public class TelemetriaService {
     }
 
     /**
+     * Obtém dados de telemetria no formato Map para compatibilidade
+     */
+    public Map<String, Object> obterDadosTelemetria() {
+        Map<String, Object> dados = new HashMap<>();
+        
+        // Calcular métricas gerais
+        long totalRequisicoes = volumeRequisicoes.values().stream()
+                .mapToLong(AtomicLong::get)
+                .sum();
+        
+        long totalSucesso = volumeSucesso.values().stream()
+                .mapToLong(AtomicLong::get)
+                .sum();
+        
+        double percentualSucessoGeral = totalRequisicoes > 0 ? 
+                (double) totalSucesso / totalRequisicoes : 0.0;
+        
+        dados.put("totalRequisicoes", totalRequisicoes);
+        dados.put("totalSucesso", totalSucesso);
+        dados.put("percentualSucessoGeral", percentualSucessoGeral);
+        dados.put("dataConsulta", LocalDate.now());
+        
+        // Adicionar detalhes por endpoint
+        Map<String, Object> endpointsDetalhes = new HashMap<>();
+        for (String operacao : volumeRequisicoes.keySet()) {
+            Map<String, Object> detalheEndpoint = new HashMap<>();
+            long requisicoes = volumeRequisicoes.get(operacao).get();
+            long sucesso = volumeSucesso.getOrDefault(operacao, new AtomicLong(0)).get();
+            List<Long> tempos = temposRespostaMs.getOrDefault(operacao, Collections.emptyList());
+            
+            detalheEndpoint.put("requisicoes", requisicoes);
+            detalheEndpoint.put("sucesso", sucesso);
+            detalheEndpoint.put("percentualSucesso", requisicoes > 0 ? (double) sucesso / requisicoes : 0.0);
+            
+            if (!tempos.isEmpty()) {
+                detalheEndpoint.put("tempoMedio", tempos.stream().mapToLong(Long::longValue).average().orElse(0.0));
+                detalheEndpoint.put("tempoMinimo", tempos.stream().mapToLong(Long::longValue).min().orElse(0L));
+                detalheEndpoint.put("tempoMaximo", tempos.stream().mapToLong(Long::longValue).max().orElse(0L));
+            }
+            
+            endpointsDetalhes.put(operacao, detalheEndpoint);
+        }
+        dados.put("endpoints", endpointsDetalhes);
+        
+        return dados;
+    }
+
+    /**
      * Limpa os dados de telemetria
      */
     public void limparDados() {
         volumeRequisicoes.clear();
         tempoTotalRespostaNanos.clear();
+        volumeSucesso.clear();
+        temposRespostaMs.clear();
     }
 }

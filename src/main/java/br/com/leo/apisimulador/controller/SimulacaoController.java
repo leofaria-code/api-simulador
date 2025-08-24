@@ -36,6 +36,9 @@ public class SimulacaoController {
     private static final String ENDPOINT_SIMULAR = "POST /simulacoes";
     private static final String ENDPOINT_LISTAR = "GET /simulacoes";
     private static final String ENDPOINT_LISTAR_DIA_POR_PRODUTO = "GET /simulacoes/dia";
+    private static final String ENDPOINT_AGREGADO_DIA = "GET /simulacoes/agregado-por-dia-e-produto";
+    private static final String ENDPOINT_AGREGADO_PRODUTO = "GET /simulacoes/agregado-por-produto-e-data";
+    private static final String ENDPOINT_TELEMETRIA = "GET /simulacoes/telemetria";
     private static final int TAMANHO_PAGINA_PADRAO = 200;
 
     private final ObjectMapper objectMapper;
@@ -138,6 +141,63 @@ public class SimulacaoController {
     }
 
     /**
+     * Obtém simulações agregadas por dia e produto.
+     * 
+     * @param data Data de referência para consulta
+     * @return Lista de simulações da data especificada
+     */
+    @Operation(summary = "Obtém simulações por dia e produto", description = "Retorna todas as simulações realizadas em uma data específica, agrupadas por produto")
+    @GetMapping("/agregado-por-dia-e-produto/{data}")
+    public ResponseEntity<List<SimulacaoGetResponse>> obterSimulacoesPorDiaEProduto(
+            @Parameter(description = "Data de referência (formato: YYYY-MM-DD)") @PathVariable LocalDate data) {
+        log.info("Buscando simulações para a data: {}", data);
+
+        List<SimulacaoGetResponse> resultados = servicoTelemetria.medirTempoExecucao(
+                ENDPOINT_AGREGADO_DIA,
+                () -> repositorioSimulacao.findByDataReferencia(data).stream()
+                        .map(this::converterParaGetResponse)
+                        .collect(Collectors.toList()));
+
+        return ResponseEntity.ok(resultados);
+    }
+
+    /**
+     * Obtém simulações agregadas por produto e data.
+     * 
+     * @param produtoId ID do produto
+     * @param data Data de referência para consulta
+     * @return Lista de simulações do produto na data especificada
+     */
+    @Operation(summary = "Obtém simulações por produto e data", description = "Retorna todas as simulações de um produto específico em uma data específica")
+    @GetMapping("/agregado-por-produto-e-data/{produtoId}/{data}")
+    public ResponseEntity<List<SimulacaoGetResponse>> obterSimulacoesPorProdutoEData(
+            @Parameter(description = "ID do produto") @PathVariable Integer produtoId,
+            @Parameter(description = "Data de referência (formato: YYYY-MM-DD)") @PathVariable LocalDate data) {
+        log.info("Buscando simulações para produto: {} e data: {}", produtoId, data);
+
+        List<SimulacaoGetResponse> resultados = servicoTelemetria.medirTempoExecucao(
+                ENDPOINT_AGREGADO_PRODUTO,
+                () -> repositorioSimulacao.findByProdutoIdAndDataReferencia(produtoId, data).stream()
+                        .map(this::converterParaGetResponse)
+                        .collect(Collectors.toList()));
+
+        return ResponseEntity.ok(resultados);
+    }
+
+    /**
+     * Obtém dados de telemetria da API.
+     * 
+     * @return Métricas de uso e performance
+     */
+    @Operation(summary = "Obtém dados de telemetria", description = "Retorna métricas de uso e performance dos endpoints da API")
+    @GetMapping("/telemetria")
+    public ResponseEntity<Map<String, Object>> obterDadosTelemetria() {
+        return ResponseEntity.ok(servicoTelemetria.medirTempoExecucao(
+                ENDPOINT_TELEMETRIA,
+                servicoTelemetria::obterDadosTelemetria));
+    }
+
+    /**
      * Converte uma entidade Simulacao para um DTO resumido com valores totais.
      */
     private SimulacaoResumoDTO converterParaResumoSimulacao(Simulacao simulacao) {
@@ -180,5 +240,29 @@ public class SimulacaoController {
                         .reduce(BigDecimal.ZERO, BigDecimal::add))
                 .orElse(BigDecimal.ZERO)
                 .setScale(2, java.math.RoundingMode.HALF_UP);
+    }
+
+    private SimulacaoGetResponse converterParaGetResponse(Simulacao simulacao) {
+        String descricaoProduto = extrairDescricaoProduto(simulacao.getResultadoJson());
+        
+        return new SimulacaoGetResponse(
+                simulacao.getIdSimulacao(),
+                simulacao.getProdutoId(),
+                descricaoProduto,
+                simulacao.getValorDesejado(),
+                simulacao.getPrazo(),
+                simulacao.getDataReferencia(),
+                simulacao.getResultadoJson()
+        );
+    }
+
+    private String extrairDescricaoProduto(String resultadoJson) {
+        try {
+            SimulacaoResponseDTO simResponse = objectMapper.readValue(resultadoJson, SimulacaoResponseDTO.class);
+            return simResponse.descricaoProduto();
+        } catch (Exception e) {
+            log.error("Erro ao extrair descrição do produto do JSON: {}", e.getMessage());
+            return "Descrição Indisponível";
+        }
     }
 }
