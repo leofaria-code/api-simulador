@@ -1,30 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    
+
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>3.5.5</version>
-        <relativePath/>
+        <relativePath />
     </parent>
-    
+
     <groupId>br.com.leo</groupId>
     <artifactId>api-simulador</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>api-simulador</name>
     <description>API para simulação de empréstimos</description>
-    
+
     <properties>
         <java.version>17</java.version>
         <azure.version>1.2.18</azure.version>
-        <springdoc.version>2.3.0</springdoc.version>
+        <springdoc.version>2.7.0</springdoc.version>
         <mssql-jdbc.version>12.4.2.jre11</mssql-jdbc.version>
         <dotenv.version>3.0.0</dotenv.version>
+        <h2.version>2.2.224</h2.version>
     </properties>
-    
+
     <dependencyManagement>
         <dependencies>
             <dependency>
@@ -36,7 +37,7 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-    
+
     <dependencies>
         <!-- Spring Boot Starters -->
         <dependency>
@@ -71,7 +72,8 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>runtime</scope>
+            <version>${h2.version}</version>
+            <!-- Removido o scope runtime para permitir compilação -->
         </dependency>
 
         <!-- Azure Event Hub -->
@@ -79,7 +81,7 @@
             <groupId>com.azure</groupId>
             <artifactId>azure-messaging-eventhubs</artifactId>
         </dependency>
-        
+
         <!-- Documentação API -->
         <dependency>
             <groupId>org.springdoc</groupId>

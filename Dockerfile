@@ -1,36 +1,40 @@
 # Build stage
-FROM maven:3.9.5-eclipse-temurin-17-alpine AS build
+FROM maven:3.9.6-eclipse-temurin-17-alpine AS build
+
 WORKDIR /workspace/app
 
-# Copiar apenas o POM primeiro para cache de dependências
+# Copia apenas o pom.xml primeiro
 COPY pom.xml .
+
+# Cache de dependências Maven
 RUN mvn dependency:go-offline
 
-# Copiar código fonte e construir
-COPY src src
+# Copia o código fonte
+COPY src/ ./src/
+
+# Build do projeto
 RUN mvn clean package -DskipTests
 
 # Runtime stage
 FROM eclipse-temurin:17-jre-alpine
 
-# Variáveis de ambiente para JVM
-ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC"
+ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC -XX:+UseStringDeduplication" \
+    SPRING_PROFILES_ACTIVE="prod"
 
-# Criar usuário não-root
 RUN addgroup -g 1001 -S appgroup && \
-    adduser -u 1001 -S appuser -G appgroup
+    adduser -u 1001 -S appuser -G appgroup && \
+    mkdir /app && \
+    chown -R appuser:appgroup /app
 
 WORKDIR /app
 
-# Copiar apenas o JAR necessário
-COPY --from=build /workspace/app/target/*.jar app.jar
-RUN chown -R appuser:appgroup /app
+COPY --from=build --chown=appuser:appgroup /workspace/app/target/*.jar app.jar
 
 USER appuser
 
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=60s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8080/actuator/health || exit 1
+    CMD wget --quiet --tries=1 --spider http://localhost:8080/actuator/health/liveness || exit 1
 
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
+ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS} -Djava.security.egd=file:/dev/./urandom -jar /app/app.jar"]
