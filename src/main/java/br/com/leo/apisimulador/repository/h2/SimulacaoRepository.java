@@ -12,6 +12,7 @@ import java.util.List;
 @Repository
 public interface SimulacaoRepository extends JpaRepository<Simulacao, Long> {
     List<Simulacao> findByDataReferencia(LocalDate dataReferencia);
+    List<Simulacao> findByProdutoIdAndDataReferencia(Integer produtoId, LocalDate dataReferencia);
     @NonNull
     Page<Simulacao> findAll(@NonNull Pageable pageable);
 }
