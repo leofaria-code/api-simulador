@@ -5,84 +5,70 @@ server:
 spring:
   application:
     name: api-simulador
+  
+  main:
+    banner-mode: off
 
-  # Configuração Principal (SQL Server)
-  principal-sqlserver:
-    datasource:
-      type: com.zaxxer.hikari.HikariDataSource
-      driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-      url: jdbc:sqlserver://${DB_URL}:${DB_PORT};databaseName=${DB_NAME};encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
+  # Configuração SQL Server
+  datasource:
+    principal-sqlserver:
+      jdbc-url: jdbc:sqlserver://${DB_URL}:${DB_PORT};databaseName=${DB_NAME};encrypt=true;trustServerCertificate=true;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
       username: ${DB_USERNAME}
       password: ${DB_PASSWORD}
+      driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+      type: com.zaxxer.hikari.HikariDataSource
       hikari:
         maximum-pool-size: 20
         minimum-idle: 5
         connection-timeout: 60000
         idle-timeout: 300000
         max-lifetime: 1200000
-    jpa:
-      database-platform: org.hibernate.dialect.SQLServerDialect
-      hibernate:
-        ddl-auto: none
-      properties:
-        hibernate:
-          default_schema: dbo
-          dialect: org.hibernate.dialect.SQLServerDialect
-          show_sql: false
-          format_sql: true
-          jdbc.time_zone: UTC
 
-  # Configuração Local (H2)
-  local-h2:
-    datasource:
+  # Configuração H2
+  second-datasource:
+    local-h2:
+      jdbc-url: ${H2_URL:jdbc:h2:mem:simulacao};DB_CLOSE_DELAY=-1
+      username: ${H2_USERNAME:sa}
+      password: ${H2_PASSWORD:password}
       driver-class-name: org.h2.Driver
-      url: jdbc:h2:mem:simulacao;DB_CLOSE_DELAY=-1
-      username: ${H2_USERNAME}
-      password: ${H2_PASSWORD}
-    jpa:
-      open-in-view: false
-      database-platform: org.hibernate.dialect.H2Dialect
-      hibernate:
-        ddl-auto: update
-      properties:
-        hibernate:
-          dialect: org.hibernate.dialect.H2Dialect
-          show_sql: true
-          format_sql: true
-          jdbc.time_zone: UTC
 
   h2:
     console:
       enabled: true
       path: /h2-console
+      settings:
+        web-allow-others: true
+        trace: false
+        web-admin-password: ${H2_ADMIN_PASSWORD:admin}
+
+  # Configuração JPA
+  jpa:
+    database-platform: org.hibernate.dialect.SQLServerDialect
+    show-sql: ${SHOW_SQL:false}
+    properties:
+      hibernate:
+        format_sql: true
+
+    hibernate:
+      ddl-auto: none
 
   sql:
     init:
       mode: never
 
-  main:
-    banner-mode: off
-
-  datasource:
-    principal-sqlserver:
-      jdbc-url: jdbc:sqlserver://${DB_URL}:${DB_PORT};databaseName=${DB_NAME};encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
-      username: ${DB_USERNAME}
-      password: ${DB_PASSWORD}
-      driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-      type: com.zaxxer.hikari.HikariDataSource
-      hikari:
-        maximum-pool-size: 20
-        minimum-idle: 5
-        connection-timeout: 60000
-        idle-timeout: 300000
-        max-lifetime: 1200000
-
-  second-datasource:
-    local-h2:
-      jdbc-url: ${H2_URL};DB_CLOSE_DELAY=-1
-      username: ${H2_USERNAME}
-      password: ${H2_PASSWORD}
-      driver-class-name: org.h2.Driver
+# Configuração de Monitoramento
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,metrics
+  endpoint:
+    health:
+      show-details: always
+    metrics:
+      access: UNRESTRICTED
+    prometheus:
+      access: UNRESTRICTED
 
 # Configuração do Azure Event Hub
 azure:

@@ -1,0 +1,14 @@
+{
+	"pagina":1,
+	"qtdRegistros":404,
+	"qtdRegistrosPagina":200,
+	"registros":[
+		{
+			"idSimulacao": 20180702,
+			"valorDesejado": 900.00,
+			"prazo": 5,
+			"valorTotalParcelasSAC": 943.33,
+			"valorTotalParcelasPrice": 948.90
+		}
+	]
+}

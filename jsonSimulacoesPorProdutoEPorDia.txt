@@ -1,0 +1,13 @@
+Modelo de retorno para o volume simulado por produto e por dia:
+
+{
+	"dataReferencia": "2025-08-30",
+	"simulacoes": [{
+		"codigoProduto": 1,
+		"descricaoProduto": "Produto 1",
+		"taxaMediaJuro": 0.189,
+		"valorMedioPrestacao": 300.00,
+		"valorTotalDesejado": 12047.47,
+		"valorTotalCredito": 16750.00
+	}]
+}

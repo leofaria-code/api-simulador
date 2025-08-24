@@ -1,0 +1,17 @@
+Modelo de retorno para os dados de telemetria:
+
+{
+	"dataReferencia": "2025-08-30",
+	"listaEndpoints":
+		[
+			{
+				"nomeAPi": "Simulacao",
+				"qtdRequisicoes": 135,
+				"tempoMedio": 150,  // em milissegundos,
+				"tempoMinimo": 23,
+				"tempoMaximo": 860,
+				"percentualSucesso": 0.98, // qtd de retorno 200 com relacao ao total
+
+			}
+		]
+}
