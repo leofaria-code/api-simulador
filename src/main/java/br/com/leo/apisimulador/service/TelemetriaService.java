@@ -1,9 +1,12 @@
 package br.com.leo.apisimulador.service;
 
+import br.com.leo.apisimulador.dto.TelemetriaEndpointDTO;
+import br.com.leo.apisimulador.dto.TelemetriaResponseDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
@@ -14,9 +17,9 @@ import java.util.function.Supplier;
 public class TelemetriaService {
 
     private final Map<String, AtomicLong> volumeRequisicoes = new ConcurrentHashMap<>();
-    private final Map<String, AtomicLong> volumeErros = new ConcurrentHashMap<>();
-    private final Map<String, List<Double>> temposResposta = new ConcurrentHashMap<>();
     private final Map<String, AtomicLong> tempoTotalRespostaNanos = new ConcurrentHashMap<>();
+    private final Map<String, AtomicLong> volumeSucesso = new ConcurrentHashMap<>();
+    private final Map<String, List<Long>> temposRespostaMs = new ConcurrentHashMap<>();
 
     /**
      * Executa uma operação com medição de tempo
@@ -27,16 +30,18 @@ public class TelemetriaService {
      */
     public <T> T medirTempoExecucao(String nomeOperacao, Supplier<T> operacao) {
         long inicio = System.nanoTime();
+        boolean sucesso = false;
         try {
             T resultado = operacao.get();
+            sucesso = true;
             long fim = System.nanoTime();
-            registrarTempoResposta(nomeOperacao, Duration.ofNanos(fim - inicio));
+            registrarTempoResposta(nomeOperacao, Duration.ofNanos(fim - inicio), sucesso);
             log.debug("Operação {} executada em {} ms", nomeOperacao,
                     Duration.ofNanos(fim - inicio).toMillis());
             return resultado;
         } catch (Exception e) {
             long fim = System.nanoTime();
-            registrarTempoResposta(nomeOperacao, Duration.ofNanos(fim - inicio));
+            registrarTempoResposta(nomeOperacao, Duration.ofNanos(fim - inicio), sucesso);
             log.error("Erro na operação {} após {} ms: {}", nomeOperacao,
                     Duration.ofNanos(fim - inicio).toMillis(), e.getMessage());
             throw e;
@@ -46,57 +51,82 @@ public class TelemetriaService {
     /**
      * Registra o tempo de resposta de uma operação
      */
-    public void registrarTempoResposta(String nomeOperacao, Duration duracao) {
+    public void registrarTempoResposta(String nomeOperacao, Duration duracao, boolean sucesso) {
         volumeRequisicoes
                 .computeIfAbsent(nomeOperacao, k -> new AtomicLong(0))
                 .incrementAndGet();
 
+        if (sucesso) {
+            volumeSucesso
+                    .computeIfAbsent(nomeOperacao, k -> new AtomicLong(0))
+                    .incrementAndGet();
+        }
+        // Note: removed error tracking since it's no longer needed
+
         tempoTotalRespostaNanos
                 .computeIfAbsent(nomeOperacao, k -> new AtomicLong(0))
                 .addAndGet(duracao.toNanos());
+
+        // Armazenar tempos individuais para cálculo de min/max
+        temposRespostaMs
+                .computeIfAbsent(nomeOperacao, k -> Collections.synchronizedList(new ArrayList<>()))
+                .add(duracao.toMillis());
     }
 
     /**
-     * Obtém dados consolidados de telemetria
+     * Obtém dados de telemetria no formato especificado
      */
-    public Map<String, Object> obterDadosTelemetria() {
-        Map<String, Object> metricas = new TreeMap<>(); // Usando TreeMap para ordenação
+    public TelemetriaResponseDTO obterTelemetriaFormatada(LocalDate dataReferencia) {
+        List<TelemetriaEndpointDTO> endpoints = new ArrayList<>();
 
-        // Agrupando por endpoint
-        Map<String, MetricasEndpoint> metricasPorEndpoint = new HashMap<>();
+        // Mapear os endpoints conhecidos da SimulacaoController
+        Map<String, String> endpointNames = Map.of(
+                "POST /simulacoes", "Simulacao - Criar",
+                "GET /simulacoes", "Simulacao - Listar",
+                "GET /simulacoes/dia", "Simulacao - Volume por Dia"
+        );
 
         for (String operacao : volumeRequisicoes.keySet()) {
-            String endpoint = operacao.split(" ", 2)[1]; // Separa o método HTTP do path
-            long volume = volumeRequisicoes.get(operacao).get();
-            long tempoTotal = tempoTotalRespostaNanos.get(operacao).get();
-            double tempoMedioMs = (double) tempoTotal / volume / 1_000_000.0;
-            double tempoTotalMs = tempoTotal / 1_000_000.0;
+            if (endpointNames.containsKey(operacao)) {
+                long qtdRequisicoes = volumeRequisicoes.get(operacao).get();
+                long qtdSucesso = volumeSucesso.getOrDefault(operacao, new AtomicLong(0)).get();
+                List<Long> tempos = temposRespostaMs.getOrDefault(operacao, Collections.emptyList());
 
-            MetricasEndpoint endpointMetricas = metricasPorEndpoint.computeIfAbsent(endpoint,
-                    k -> new MetricasEndpoint());
+                if (qtdRequisicoes > 0 && !tempos.isEmpty()) {
+                    // Calcular métricas de tempo
+                    long tempoMedio = (long) tempos.stream()
+                            .mapToLong(Long::longValue)
+                            .average()
+                            .orElse(0.0);
+                    
+                    long tempoMinimo = tempos.stream()
+                            .mapToLong(Long::longValue)
+                            .min()
+                            .orElse(0L);
+                    
+                    long tempoMaximo = tempos.stream()
+                            .mapToLong(Long::longValue)
+                            .max()
+                            .orElse(0L);
 
-            endpointMetricas.volume = volume;
-            endpointMetricas.tempoMedioMs = tempoMedioMs;
-            endpointMetricas.tempoTotalMs = tempoTotalMs;
-            endpointMetricas.operacao = operacao;
+                    // Calcular percentual de sucesso
+                    double percentualSucesso = (double) qtdSucesso / qtdRequisicoes;
+
+                    TelemetriaEndpointDTO endpointDTO = new TelemetriaEndpointDTO(
+                            endpointNames.get(operacao),
+                            qtdRequisicoes,
+                            tempoMedio,
+                            tempoMinimo,
+                            tempoMaximo,
+                            percentualSucesso
+                    );
+
+                    endpoints.add(endpointDTO);
+                }
+            }
         }
 
-        // Ordenando e formatando o resultado final
-        metricasPorEndpoint.entrySet().stream()
-                .sorted(Map.Entry.comparingByKey())
-                .forEach(entry -> {
-                    MetricasEndpoint m = entry.getValue();
-                    String baseKey = entry.getKey();
-
-                    Map<String, Object> endpointMetricas = new LinkedHashMap<>();
-                    endpointMetricas.put("volume_requisicoes", m.volume);
-                    endpointMetricas.put("tempo_medio_ms", String.format("%.2f", m.tempoMedioMs));
-                    endpointMetricas.put("tempo_total_ms", String.format("%.2f", m.tempoTotalMs));
-
-                    metricas.put(baseKey, endpointMetricas);
-                });
-
-        return metricas;
+        return new TelemetriaResponseDTO(dataReferencia, endpoints);
     }
 
     /**
@@ -105,58 +135,5 @@ public class TelemetriaService {
     public void limparDados() {
         volumeRequisicoes.clear();
         tempoTotalRespostaNanos.clear();
-    }
-
-    private static class MetricasEndpoint {
-        public String operacao;
-        long volume;
-        double tempoMedioMs;
-        double tempoTotalMs;
-    }
-
-    public <T> T medirOperacaoSimulacao(String operacao, Supplier<T> execucao) {
-        long inicio = System.currentTimeMillis();
-        try {
-            T resultado = execucao.get();
-            registrarSucesso(operacao, System.currentTimeMillis() - inicio);
-            return resultado;
-        } catch (Exception e) {
-            registrarErro(operacao, System.currentTimeMillis() - inicio);
-            throw e;
-        }
-    }
-
-    private void registrarSucesso(String operacao, long tempoExecucao) {
-        volumeRequisicoes.computeIfAbsent(operacao, k -> new AtomicLong()).incrementAndGet();
-        temposResposta.computeIfAbsent(operacao, k -> Collections.synchronizedList(new ArrayList<>()))
-                .add((double) tempoExecucao);
-
-        log.info("Operação '{}' completada em {}ms", operacao, tempoExecucao);
-    }
-
-    private void registrarErro(String operacao, long tempoExecucao) {
-        volumeErros.computeIfAbsent(operacao, k -> new AtomicLong()).incrementAndGet();
-        log.error("Erro na operação '{}' após {}ms", operacao, tempoExecucao);
-    }
-
-    public Map<String, Object> obterEstatisticas() {
-        Map<String, Object> estatisticas = new HashMap<>();
-
-        volumeRequisicoes.forEach((operacao, volume) -> {
-            Map<String, Object> metricas = new HashMap<>();
-            metricas.put("total_requisicoes", volume.get());
-            metricas.put("total_erros", volumeErros.getOrDefault(operacao, new AtomicLong()).get());
-
-            List<Double> tempos = temposResposta.getOrDefault(operacao, new ArrayList<>());
-            if (!tempos.isEmpty()) {
-                double tempoMedio = tempos.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-                metricas.put("tempo_medio_ms", String.format("%.2f", tempoMedio));
-                metricas.put("volume_ultimos_10min", tempos.size());
-            }
-
-            estatisticas.put(operacao, metricas);
-        });
-
-        return estatisticas;
     }
 }
