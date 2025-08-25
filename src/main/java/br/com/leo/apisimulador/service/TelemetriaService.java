@@ -126,7 +126,7 @@ public class TelemetriaService {
             }
         }
 
-        return new TelemetriaResponseDTO(dataReferencia, endpoints);
+        return new TelemetriaResponseDTO(dataReferencia, null, endpoints);
     }
 
     /**

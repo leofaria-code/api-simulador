@@ -51,7 +51,7 @@ public class PrincipalSQLServerConfig {
         properties.put("hibernate.hbm2ddl.auto", "none"); // Não alterar estrutura do BD
         properties.put("hibernate.show_sql", "false");
         properties.put("hibernate.format_sql", "true");
-        properties.put("hibernate.jdbc.time_zone", "UTC");
+        properties.put("hibernate.jdbc.time_zone", "America/Sao_Paulo");
         em.setJpaPropertyMap(properties);
 
         return em;

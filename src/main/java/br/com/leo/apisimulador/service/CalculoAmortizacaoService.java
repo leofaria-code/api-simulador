@@ -1,10 +1,8 @@
 package br.com.leo.apisimulador.service;
 
 import br.com.leo.apisimulador.dto.ParcelaDTO;
-import br.com.leo.apisimulador.service.calculadora.AmortizacaoCalculadora;
 import br.com.leo.apisimulador.service.calculadora.PriceCalculadora;
 import br.com.leo.apisimulador.service.calculadora.SACCalculadora;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -19,7 +17,6 @@ public class CalculoAmortizacaoService {
     private final SACCalculadora sacCalculadora;
     private final PriceCalculadora priceCalculadora;
 
-    @Autowired
     public CalculoAmortizacaoService(SACCalculadora sacCalculadora, PriceCalculadora priceCalculadora) {
         this.sacCalculadora = sacCalculadora;
         this.priceCalculadora = priceCalculadora;

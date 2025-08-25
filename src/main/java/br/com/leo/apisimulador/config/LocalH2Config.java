@@ -48,7 +48,7 @@ public class LocalH2Config {
         properties.put("hibernate.hbm2ddl.auto", "create-drop");
         properties.put("hibernate.show_sql", "true");
         properties.put("hibernate.format_sql", "true");
-        properties.put("hibernate.jdbc.time_zone", "UTC");
+        properties.put("hibernate.jdbc.time_zone", "America/Sao_Paulo");
         em.setJpaPropertyMap(properties);
 
         return em;

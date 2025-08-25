@@ -1,23 +1,26 @@
 services:
   api-simulador:
-    build: .
-    container_name: api-simulador
+    build: 
+      context: .
+      dockerfile: Dockerfile
+    container_name: api-simulador-hackathon
     ports:
       - "8080:8080"
     env_file:
       - .env
     environment:
-      # Configurações JVM
-      - JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseG1GC
+      # Configurações JVM otimizadas para container
+      - JAVA_OPTS=-Xms256m -Xmx512m -XX:+UseG1GC -XX:+UseStringDeduplication
       # Perfil Spring
       - SPRING_PROFILES_ACTIVE=prod
+      - TZ=America/Sao_Paulo
       
       # Configurações SQL Server Principal
       - SPRING_DATASOURCE_PRINCIPAL-SQLSERVER_URL=jdbc:sqlserver://${DB_URL}:${DB_PORT};databaseName=${DB_NAME};encrypt=true;trustServerCertificate=true;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
       - SPRING_DATASOURCE_PRINCIPAL-SQLSERVER_USERNAME=${DB_USERNAME}
       - SPRING_DATASOURCE_PRINCIPAL-SQLSERVER_PASSWORD=${DB_PASSWORD}
       
-      # Configurações H2
+      # Configurações H2 para desenvolvimento
       - SPRING_SECOND-DATASOURCE_LOCAL-H2_URL=${H2_URL}
       - SPRING_SECOND-DATASOURCE_LOCAL-H2_USERNAME=${H2_USERNAME}
       - SPRING_SECOND-DATASOURCE_LOCAL-H2_PASSWORD=${H2_PASSWORD}
@@ -32,61 +35,33 @@ services:
       
       # Configurações Logging
       - LOGGING_LEVEL_ORG_HIBERNATE_SQL=${SHOW_SQL}
+      - LOGGING_LEVEL_ROOT=INFO
+      - LOGGING_LEVEL_BR_COM_LEO=DEBUG
 
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      start_period: 60s
     restart: unless-stopped
     networks:
       - simulador-network
+    volumes:
+      # Volume para logs persistentes (opcional)
+      - ./logs:/app/logs:rw
     deploy:
       resources:
         limits:
-          cpus: '1'
+          cpus: '1.0'
           memory: 768M
         reservations:
           cpus: '0.5'
           memory: 512M
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-    networks:
-      - simulador-network
-    depends_on:
-      - api-simulador
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-    networks:
-      - simulador-network
-    depends_on:
-      - prometheus
-
-volumes:
-  prometheus_data:
-  grafana_data:
+    labels:
+      - "project=hackathon-2025"
+      - "service=api-simulador"
+      - "version=1.0.0"
 
 networks:
   simulador-network:

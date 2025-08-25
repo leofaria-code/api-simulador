@@ -18,16 +18,14 @@ catch {
 Write-Host "`n💰 TESTE 2: Criando Simulação" -ForegroundColor Cyan
 $headers = @{"Content-Type" = "application/json" }
 $simulacao1 = @{
-    produtoId      = 1
-    valorDesejado  = 50000.00
-    prazo          = 60
-    dataReferencia = "2025-08-24"
+    valorDesejado = 50000.00
+    prazo         = 60
 } | ConvertTo-Json
 
 try {
-    $response1 = Invoke-RestMethod -Uri "http://localhost:8080/api/simulacao" -Method POST -Body $simulacao1 -Headers $headers
+    $response1 = Invoke-RestMethod -Uri "http://localhost:8080/simulacoes" -Method POST -Body $simulacao1 -Headers $headers
     Write-Host "✅ Simulação criada com ID: $($response1.idSimulacao)" -ForegroundColor Green
-    Write-Host "📊 Resultado: $($response1.resultadoJson)" -ForegroundColor Gray
+    Write-Host "📊 Taxa de Juros: $($response1.taxaJuros)%" -ForegroundColor Gray
 }
 catch {
     Write-Host "❌ Criação de simulação falhou: $($_.Exception.Message)" -ForegroundColor Red
@@ -35,16 +33,14 @@ catch {
 
 Write-Host "`n💰 TESTE 3: Criando Segunda Simulação" -ForegroundColor Cyan
 $simulacao2 = @{
-    produtoId      = 2
-    valorDesejado  = 100000.00
-    prazo          = 120
-    dataReferencia = "2025-08-24"
+    valorDesejado = 100000.00
+    prazo         = 120
 } | ConvertTo-Json
 
 try {
-    $response2 = Invoke-RestMethod -Uri "http://localhost:8080/api/simulacao" -Method POST -Body $simulacao2 -Headers $headers
+    $response2 = Invoke-RestMethod -Uri "http://localhost:8080/simulacoes" -Method POST -Body $simulacao2 -Headers $headers
     Write-Host "✅ Segunda simulação criada com ID: $($response2.idSimulacao)" -ForegroundColor Green
-    Write-Host "📊 Resultado: $($response2.resultadoJson)" -ForegroundColor Gray
+    Write-Host "📊 Taxa de Juros: $($response2.taxaJuros)%" -ForegroundColor Gray
 }
 catch {
     Write-Host "❌ Segunda simulação falhou: $($_.Exception.Message)" -ForegroundColor Red
@@ -52,10 +48,11 @@ catch {
 
 Write-Host "`n📋 TESTE 4: Listando Todas as Simulações" -ForegroundColor Cyan
 try {
-    $simulacoes = Invoke-RestMethod -Uri "http://localhost:8080/api/simulacao" -Method GET
-    Write-Host "✅ Total de simulações: $($simulacoes.Count)" -ForegroundColor Green
-    foreach ($sim in $simulacoes) {
-        Write-Host "   📝 ID: $($sim.idSimulacao) | Produto: $($sim.produtoId) | Valor: R$ $($sim.valorDesejado)" -ForegroundColor Gray
+    $simulacoes = Invoke-RestMethod -Uri "http://localhost:8080/simulacoes" -Method GET
+    Write-Host "✅ Total de simulações: $($simulacoes.qtdRegistros)" -ForegroundColor Green
+    Write-Host "   📋 Página: $($simulacoes.pagina) | Registros na página: $($simulacoes.registros.Count)" -ForegroundColor Gray
+    foreach ($sim in $simulacoes.registros) {
+        Write-Host "   📝 ID: $($sim.idSimulacao) | Valor: R$ $($sim.valorDesejado) | Prazo: $($sim.prazo) meses" -ForegroundColor Gray
     }
 }
 catch {
@@ -64,14 +61,12 @@ catch {
 
 Write-Host "`n❌ TESTE 5: Teste de Validação (dados inválidos)" -ForegroundColor Cyan
 $simulacaoInvalida = @{
-    produtoId      = -1
-    valorDesejado  = -1000
-    prazo          = 0
-    dataReferencia = "data-invalida"
+    valorDesejado = -1000
+    prazo         = 0
 } | ConvertTo-Json
 
 try {
-    $responseInvalida = Invoke-RestMethod -Uri "http://localhost:8080/api/simulacao" -Method POST -Body $simulacaoInvalida -Headers $headers
+    $responseInvalida = Invoke-RestMethod -Uri "http://localhost:8080/simulacoes" -Method POST -Body $simulacaoInvalida -Headers $headers
     Write-Host "❌ Validação não funcionou - deveria ter falhado!" -ForegroundColor Red
 }
 catch {

@@ -89,8 +89,11 @@ public class SimulacaoService {
         return produtoRepository.findAll().stream()
                 .filter(p -> isProdutoElegivel(p, requisicao))
                 .findFirst()
-                .orElseThrow(
-                        () -> new IllegalArgumentException("Nenhum produto encontrado para os parâmetros informados."));
+                .orElseThrow(() -> {
+                    log.error("Nenhum produto encontrado para os parâmetros: valor={}, prazo={}",
+                            requisicao.valorDesejado(), requisicao.prazo());
+                    return new IllegalArgumentException("Nenhum produto encontrado para os parâmetros informados.");
+                });
     }
 
     private boolean isProdutoElegivel(Produto produto, SimulacaoRequestDTO requisicao) {
@@ -111,14 +114,14 @@ public class SimulacaoService {
         }
 
         // Verificar valor máximo (se não for nulo)
-        if (produto.getValorMaximo() != null && 
-            requisicao.valorDesejado().compareTo(produto.getValorMaximo()) > 0) {
+        if (produto.getValorMaximo() != null &&
+                requisicao.valorDesejado().compareTo(produto.getValorMaximo()) > 0) {
             return false;
         }
 
         // Verificar prazo máximo (se não for nulo)
-        if (produto.getMaximoMeses() != null && 
-            requisicao.prazo() > produto.getMaximoMeses()) {
+        if (produto.getMaximoMeses() != null &&
+                requisicao.prazo() > produto.getMaximoMeses()) {
             return false;
         }
 
@@ -152,9 +155,15 @@ public class SimulacaoService {
 
     private void enviarParaEventHub(String mensagem) {
         try {
+            log.info("🚀 Enviando simulação para Azure Event Hub...");
+            log.debug("📄 Payload: {}", mensagem.substring(0, Math.min(100, mensagem.length())) + "...");
+
             eventHubProducerClient.send(List.of(new EventData(mensagem)));
+
+            log.info("✅ Simulação enviada com sucesso para Azure Event Hub");
         } catch (Exception e) {
-            log.error("Erro ao enviar mensagem para EventHub: {}", e.getMessage(), e);
+            log.error("❌ Erro ao enviar mensagem para EventHub: {}", e.getMessage(), e);
+            log.error("🔍 Verifique: 1) Conexão de rede, 2) Credenciais do .env, 3) Permissões do Event Hub");
         }
     }
 
