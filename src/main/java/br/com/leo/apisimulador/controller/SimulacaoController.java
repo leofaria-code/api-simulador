@@ -1,6 +1,11 @@
 package br.com.leo.apisimulador.controller;
 
+import br.com.leo.apisimulador.config.geral.TimeZoneConfig;
 import br.com.leo.apisimulador.dto.*;
+import br.com.leo.apisimulador.dto.simulacao.SimulacaoRequestDTO;
+import br.com.leo.apisimulador.dto.simulacao.SimulacaoResponseDTO;
+import br.com.leo.apisimulador.dto.simulacao.SimulacaoResumoDTO;
+import br.com.leo.apisimulador.dto.telemetria.VolumeSimuladoResponseDTO;
 import br.com.leo.apisimulador.model.h2.Simulacao;
 import br.com.leo.apisimulador.repository.h2.SimulacaoRepository;
 import br.com.leo.apisimulador.service.SimulacaoService;
@@ -27,7 +32,7 @@ import java.util.stream.Collectors;
 /**
  * Controlador REST para gerenciar simulações de crédito.
  */
-@Tag(name = "Simulações", description = "Endpoints para gerenciamento de simulações de empréstimo")
+@Tag(name = "1 - Simulações", description = "🏦 **Endpoints principais** para criação e consulta de simulações de empréstimo")
 @RestController
 @RequestMapping("/simulacoes")
 @Slf4j
@@ -78,7 +83,7 @@ public class SimulacaoController {
                         return ResponseEntity.ok(resposta);
                 } catch (Exception e) {
                         log.error("Erro ao processar simulação: {}", e.getMessage(), e);
-                        throw e; // Relançar para ser tratado pelo handler global
+                        throw e;
                 }
         }
 
@@ -101,7 +106,7 @@ public class SimulacaoController {
                         tamanho = TAMANHO_PAGINA_PADRAO;
                 }
 
-                Pageable paginacao = PageRequest.of(pagina, tamanho, Sort.by("idSimulacao").descending());
+                Pageable paginacao = PageRequest.of(pagina, tamanho, Sort.by("idSimulacao").ascending());
 
                 Page<Simulacao> paginaSimulacoes = servicoTelemetria.medirTempoExecucao(
                                 ENDPOINT_LISTAR,
@@ -112,7 +117,7 @@ public class SimulacaoController {
                                 .collect(Collectors.toList());
 
                 Map<String, Object> resposta = new LinkedHashMap<>();
-                resposta.put("pagina", paginaSimulacoes.getNumber() + 1); // Ajuste para iniciar em 1
+                resposta.put("pagina", paginaSimulacoes.getNumber() + 1); // Iniciar em 1
                 resposta.put("qtdRegistros", paginaSimulacoes.getTotalElements());
                 resposta.put("qtdRegistrosPagina", tamanho);
                 resposta.put("registros", registrosResumidos);
@@ -125,14 +130,16 @@ public class SimulacaoController {
                         @ApiResponse(responseCode = "200", description = "Volume simulado calculado com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = VolumeSimuladoResponseDTO.class))),
                         @ApiResponse(responseCode = "500", description = "Erro interno", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponseDTO.class)))
         })
-        @GetMapping("/dia/{data}")
+        @GetMapping("/dia")
         public ResponseEntity<VolumeSimuladoResponseDTO> obterVolumeSimuladoPorDia(
-                        @Parameter(description = "Data na qual as simulações foram realizadas") @PathVariable LocalDate data) {
-                log.info("Calculando volume simulado para a data: {}", data);
+                        @Parameter(description = "Data na qual as simulações foram realizadas (formato: YYYY-MM-DD). Se não informada, usa a data atual.") @RequestParam(value = "data", required = false) LocalDate data) {
+                final LocalDate dataReferencia = (data != null) ? data : TimeZoneConfig.today();
+
+                log.info("Calculando volume simulado para a data: {}", dataReferencia);
 
                 VolumeSimuladoResponseDTO resposta = servicoTelemetria.medirTempoExecucao(
                                 ENDPOINT_LISTAR_DIA_POR_PRODUTO,
-                                () -> servicoSimulacao.calcularVolumeSimuladoPorDia(data));
+                                () -> servicoSimulacao.calcularVolumeSimuladoPorDia(dataReferencia));
 
                 return ResponseEntity.ok(resposta);
         }
@@ -180,61 +187,5 @@ public class SimulacaoController {
                                                 .reduce(BigDecimal.ZERO, BigDecimal::add))
                                 .orElse(BigDecimal.ZERO)
                                 .setScale(2, java.math.RoundingMode.HALF_UP);
-        }
-
-        // ========================================
-        // ENDPOINTS DE COMPATIBILIDADE
-        // ========================================
-
-        /**
-         * Endpoint de compatibilidade para o antigo "agregado-por-dia-e-produto"
-         * Redireciona para o novo endpoint /dia/{data}
-         * 
-         * @deprecated Use GET /simulacoes/dia/{data} em vez disso
-         */
-        @Operation(summary = "[DEPRECATED] Endpoint antigo - use /dia/{data}", description = "⚠️ ENDPOINT DEPRECATED: Use GET /simulacoes/dia/{data} com uma data específica")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "301", description = "Redirecionamento permanente para o novo endpoint"),
-                        @ApiResponse(responseCode = "400", description = "Parâmetro de data obrigatório em nova versão")
-        })
-        @GetMapping("/agregado-por-dia-e-produto")
-        public ResponseEntity<Map<String, Object>> agregadoPorDiaEProdutoDeprecated() {
-                log.warn("⚠️ Acesso ao endpoint DEPRECATED: /simulacoes/agregado-por-dia-e-produto");
-
-                Map<String, Object> resposta = Map.of(
-                                "status", "DEPRECATED",
-                                "message",
-                                "Este endpoint foi descontinuado. Use GET /simulacoes/dia/{data} com uma data específica.",
-                                "exemplo", "/simulacoes/dia/2025-08-25",
-                                "novo_endpoint", "/simulacoes/dia/{data}",
-                                "parametro_obrigatorio", "data no formato YYYY-MM-DD",
-                                "timestamp", java.time.LocalDateTime.now());
-
-                return ResponseEntity.status(301).body(resposta);
-        }
-
-        /**
-         * Endpoint de compatibilidade para o antigo "telemetria" em simulacoes
-         * Redireciona para o novo endpoint em /monitoramento/telemetria
-         * 
-         * @deprecated Use GET /monitoramento/telemetria em vez disso
-         */
-        @Operation(summary = "[DEPRECATED] Endpoint antigo - use /monitoramento/telemetria", description = "⚠️ ENDPOINT DEPRECATED: Telemetria foi movida para GET /monitoramento/telemetria")
-        @ApiResponses(value = {
-                        @ApiResponse(responseCode = "301", description = "Redirecionamento permanente para o novo endpoint")
-        })
-        @GetMapping("/telemetria")
-        public ResponseEntity<Map<String, Object>> telemetriaDeprecated() {
-                log.warn("⚠️ Acesso ao endpoint DEPRECATED: /simulacoes/telemetria");
-
-                Map<String, Object> resposta = Map.of(
-                                "status", "MOVED_PERMANENTLY",
-                                "message", "Este endpoint foi movido. Use GET /monitoramento/telemetria",
-                                "novo_endpoint", "/monitoramento/telemetria",
-                                "motivo", "Reorganização da API - telemetria agrupada em /monitoramento",
-                                "timestamp", java.time.LocalDateTime.now(),
-                                "redirect_url", "/monitoramento/telemetria");
-
-                return ResponseEntity.status(301).body(resposta);
         }
 }

@@ -1,9 +1,9 @@
 package br.com.leo.apisimulador.service.calculadora;
 
-import br.com.leo.apisimulador.dto.ParcelaDTO;
-
 import java.math.BigDecimal;
 import java.util.List;
+
+import br.com.leo.apisimulador.dto.simulacao.ParcelaDTO;
 
 /**
  * Interface para cálculos de amortização de empréstimos

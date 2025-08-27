@@ -1,6 +1,11 @@
 package br.com.leo.apisimulador.service;
 
-import br.com.leo.apisimulador.dto.*;
+import br.com.leo.apisimulador.dto.simulacao.ParcelaDTO;
+import br.com.leo.apisimulador.dto.simulacao.ResultadoSimulacaoDTO;
+import br.com.leo.apisimulador.dto.simulacao.SimulacaoRequestDTO;
+import br.com.leo.apisimulador.dto.simulacao.SimulacaoResponseDTO;
+import br.com.leo.apisimulador.dto.telemetria.VolumeSimuladoProdutoDTO;
+import br.com.leo.apisimulador.dto.telemetria.VolumeSimuladoResponseDTO;
 import br.com.leo.apisimulador.enums.TipoSimulacaoEnum;
 import br.com.leo.apisimulador.model.h2.Simulacao;
 import br.com.leo.apisimulador.model.sqlserver.Produto;
@@ -11,6 +16,7 @@ import com.azure.messaging.eventhubs.EventHubProducerClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,14 +32,17 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SimulacaoService {
 
-    private final ProdutoRepository produtoRepository;
     private final SimulacaoRepository simulacaoRepository;
     private final CalculoAmortizacaoService calculoService;
     private final EventHubProducerClient eventHubProducerClient;
     private final ObjectMapper objectMapper;
     private final TelemetriaService telemetria;
+    private final ProdutoCacheService produtoCacheService;
 
-    @Transactional
+    @Autowired
+    private ProdutoRepository produtoRepository;
+
+    @Transactional("localTransactionManager")
     public SimulacaoResponseDTO simular(SimulacaoRequestDTO requisicao) {
         return telemetria.medirTempoExecucao("simulacao_emprestimo", () -> {
             try {
@@ -86,13 +95,13 @@ public class SimulacaoService {
     }
 
     private Produto buscarProdutoElegivel(SimulacaoRequestDTO requisicao) {
-        return produtoRepository.findAll().stream()
+        return produtoCacheService.buscarProdutos().stream()
                 .filter(p -> isProdutoElegivel(p, requisicao))
                 .findFirst()
                 .orElseThrow(() -> {
                     log.error("Nenhum produto encontrado para os parâmetros: valor={}, prazo={}",
                             requisicao.valorDesejado(), requisicao.prazo());
-                    return new IllegalArgumentException("Nenhum produto encontrado para os parâmetros informados.");
+                    return new RuntimeException("Nenhum produto encontrado para os parâmetros informados.");
                 });
     }
 
@@ -248,5 +257,23 @@ public class SimulacaoService {
             log.error("Erro ao extrair descrição do produto do JSON: {}", e.getMessage());
             return "Descrição Indisponível";
         }
+    }
+
+    /**
+     * Força atualização do cache de produtos (método administrativo)
+     */
+    public void atualizarCacheProdutos() {
+        log.info("🔄 Forçando atualização do cache de produtos...");
+        produtoCacheService.forcarAtualizacao();
+    }
+
+    /**
+     * Busca produto específico by ID usando cache
+     */
+    public Produto buscarProdutoPorId(Integer codigoProduto) {
+        return produtoCacheService.buscarProdutos().stream()
+                .filter(p -> p.getCodigoProduto().equals(codigoProduto))
+                .findFirst()
+                .orElse(null);
     }
 }

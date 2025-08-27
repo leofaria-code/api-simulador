@@ -1,6 +1,6 @@
 package br.com.leo.apisimulador.service;
 
-import br.com.leo.apisimulador.dto.ParcelaDTO;
+import br.com.leo.apisimulador.dto.simulacao.ParcelaDTO;
 import br.com.leo.apisimulador.service.calculadora.PriceCalculadora;
 import br.com.leo.apisimulador.service.calculadora.SACCalculadora;
 import org.springframework.stereotype.Service;

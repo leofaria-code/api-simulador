@@ -1,7 +1,8 @@
 package br.com.leo.apisimulador.service.calculadora;
 
-import br.com.leo.apisimulador.dto.ParcelaDTO;
 import org.springframework.stereotype.Component;
+
+import br.com.leo.apisimulador.dto.simulacao.ParcelaDTO;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;

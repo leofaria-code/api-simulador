@@ -1,10 +1,8 @@
 {
   "info": {
-    "_postman_id": "b1c0a0c1-d2f1-4a3b-9c4c-a11b2b2c3d4e",
     "name": "API Simulador de Empréstimos - Hackathon",
-    "description": "Coleção completa da API Simulador de Empréstimos com sistemas SAC e PRICE.\n\n🏦 **Simulações de Empréstimo:**\n- Cálculos precisos com SAC e PRICE\n- Múltiplos produtos financeiros\n- Persistência em H2 e Azure SQL Server\n\n📊 **Telemetria e Monitoramento:**\n- Métricas de performance dos endpoints\n- Integração com Azure Event Hub\n- Status de saúde da aplicação\n\n🔗 **Links Úteis:**\n- [Swagger UI](http://localhost:8080/swagger-ui.html)\n- [Documentação Completa](./README.md)\n- [Health Check](http://localhost:8080/actuator/health)\n\n**Versão:** 1.0.0\n**Desenvolvido para:** Hackathon 2025",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "12345678"
+    "description": "Coleção oficial da API Simulador de Empréstimos para Hackathon 2025.\n\nInclui endpoints de simulação (SAC/PRICE) e telemetria.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
@@ -22,12 +20,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"valorDesejado\": 15000,\n    \"prazo\": 12\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
+              "raw": "{\n    \"valorDesejado\": 15000,\n    \"prazo\": 12\n}"
             },
             "url": {
               "raw": "{{base_url}}/simulacoes",
@@ -37,16 +30,13 @@
               "path": [
                 "simulacoes"
               ]
-            },
-            "description": "**Endpoint principal para simulação de empréstimos**\n\nCalcula automaticamente:\n- ✅ Sistema SAC (Amortização Constante)\n- ✅ Sistema PRICE (Francês)\n- ✅ Múltiplos produtos financeiros\n- ✅ Parcelas detalhadas\n- ✅ Envio para Azure Event Hub\n\n**Parâmetros:**\n- `valorDesejado`: Valor do empréstimo (min: R$ 1.000)\n- `prazo`: Prazo em meses (min: 1 mês)\n\n**Retorna:**\n- Simulações SAC e PRICE\n- Detalhamento de parcelas\n- Valores totais e juros\n- Produtos recomendados"
-          },
-          "response": []
+            }
+          }
         },
         {
           "name": "Listar Todas as Simulações (Paginado)",
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
               "raw": "{{base_url}}/simulacoes?pagina=0&tamanho=10",
               "host": [
@@ -58,89 +48,47 @@
               "query": [
                 {
                   "key": "pagina",
-                  "value": "0",
-                  "description": "Número da página (inicia em 0)"
+                  "value": "0"
                 },
                 {
                   "key": "tamanho",
-                  "value": "10",
-                  "description": "Registros por página (max: 200)"
+                  "value": "10"
                 }
               ]
-            },
-            "description": "**Lista paginada de todas as simulações realizadas**\n\n📋 **Características:**\n- Paginação automática (200 registros max/página)\n- Ordenação por ID decrescente\n- Dados resumidos para performance\n- Contadores totais\n\n**Query Parameters:**\n- `pagina` (opcional): Número da página iniciando em 0\n- `tamanho` (opcional): Registros por página (padrão: 200)\n\n**Retorna:**\n- Lista de simulações resumidas\n- Metadados de paginação\n- Totalizadores"
-          },
-          "response": []
+            }
+          }
         },
         {
           "name": "Volume Simulado por Dia e Produto",
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
-              "raw": "{{base_url}}/simulacoes/dia/2025-08-25",
+              "raw": "{{base_url}}/simulacoes/dia?data=2025-08-25",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "simulacoes",
-                "dia",
-                "2025-08-25"
-              ]
-            },
-            "description": "**Análise agregada de simulações por data específica**\n\n📊 **Métricas por produto:**\n- Volume total simulado\n- Quantidade de simulações\n- Valor médio por simulação\n- Ticket médio por produto\n\n**Path Parameter:**\n- `data`: Data no formato YYYY-MM-DD\n\n**Exemplo de uso:**\n- Análise de demanda diária\n- Relatórios gerenciais\n- Acompanhamento de produtos\n- Business Intelligence\n\n⚠️ **Nota:** Endpoint antigo `/simulacoes/agregado-por-dia-e-produto` foi descontinuado"
-          },
-          "response": []
-        },
-        {
-          "name": "[DEPRECATED] Endpoint Antigo - Agregado por Dia",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/simulacoes/agregado-por-dia-e-produto",
-              "host": [
-                "{{base_url}}"
+                "dia"
               ],
-              "path": [
-                "simulacoes",
-                "agregado-por-dia-e-produto"
+              "query": [
+                {
+                  "key": "data",
+                  "value": "2025-08-25"
+                }
               ]
-            },
-            "description": "⚠️ **ENDPOINT DEPRECATED**\n\n🚫 **Este endpoint foi descontinuado!**\n\n**Use em seu lugar:**\n- `GET /simulacoes/dia/{data}` com data específica\n- Exemplo: `/simulacoes/dia/2025-08-25`\n\n**Resposta:**\n- Status 301 (Moved Permanently)\n- Informações sobre o novo endpoint\n- Instruções de migração\n\n**Motivo da mudança:**\n- Melhor organização da API\n- Parâmetro de data obrigatório\n- Padronização de nomenclatura"
-          },
-          "response": []
-        },
-        {
-          "name": "[DEPRECATED] Endpoint Antigo - Telemetria",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/simulacoes/telemetria",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "simulacoes",
-                "telemetria"
-              ]
-            },
-            "description": "⚠️ **ENDPOINT DEPRECATED**\n\n🚫 **Este endpoint foi movido!**\n\n**Use em seu lugar:**\n- `GET /monitoramento/telemetria`\n- Opcional: `?dataReferencia=2025-08-25`\n\n**Resposta:**\n- Status 301 (Moved Permanently)\n- Informações sobre o novo endpoint\n- URL de redirecionamento\n\n**Motivo da mudança:**\n- Reorganização da API\n- Telemetria agrupada em `/monitoramento`\n- Melhor separação de responsabilidades"
-          },
-          "response": []
+            }
+          }
         }
-      ],
-      "description": "Endpoints relacionados às simulações de empréstimo com sistemas SAC e PRICE"
+      ]
     },
     {
-      "name": "📊 Monitoramento e Telemetria",
+      "name": "📊 Telemetria",
       "item": [
         {
           "name": "Telemetria dos Endpoints",
           "request": {
             "method": "GET",
-            "header": [],
             "url": {
               "raw": "{{base_url}}/monitoramento/telemetria?dataReferencia=2025-08-25",
               "host": [
@@ -153,161 +101,20 @@
               "query": [
                 {
                   "key": "dataReferencia",
-                  "value": "2025-08-25",
-                  "description": "Data para análise (opcional, padrão: hoje)"
+                  "value": "2025-08-25"
                 }
               ]
-            },
-            "description": "**Métricas detalhadas de performance dos endpoints**\n\n📈 **Dados coletados:**\n- Volume de requisições por endpoint\n- Tempo médio de resposta\n- Tempo mínimo e máximo\n- Taxa de sucesso (%)\n- Análise por data específica\n\n**Query Parameters:**\n- `dataReferencia` (opcional): Data no formato YYYY-MM-DD\n\n**Uso:**\n- Monitoramento de performance\n- Identificação de gargalos\n- SLA tracking\n- Otimização de recursos"
-          },
-          "response": []
-        },
-        {
-          "name": "Status do Azure Event Hub",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/monitoramento/eventhub-status",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "monitoramento",
-                "eventhub-status"
-              ]
-            },
-            "description": "**Verificação de status do Azure Event Hub**\n\n🔍 **Informações retornadas:**\n- Status da configuração do Event Hub\n- Estado da conexão\n- Configurações ativas\n- Links para testes\n\n**Status possíveis:**\n- `eventhub_enabled: true` - Configurado e ativo\n- `eventhub_enabled: false` - Desabilitado ou não configurado\n\n**Uso:**\n- Health check da integração\n- Troubleshooting de conectividade\n- Validação de deployment"
-          },
-          "response": []
-        },
-        {
-          "name": "Testar Conexão Event Hub",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{base_url}}/monitoramento/test-eventhub",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "monitoramento",
-                "test-eventhub"
-              ]
-            },
-            "description": "**Teste prático da integração com Azure Event Hub**\n\n🧪 **Funcionalidade:**\n- Envia mensagem de teste para o Event Hub\n- Valida conectividade em tempo real\n- Retorna detalhes do resultado\n\n**Respostas possíveis:**\n- `SUCCESS`: Mensagem enviada com sucesso\n- `ERROR`: Falha na conexão (detalhes incluídos)\n- `DISABLED`: Event Hub não configurado\n\n**Uso:**\n- Validação pós-deploy\n- Troubleshooting de conectividade\n- Testes de integração\n- Verificação de credenciais"
-          },
-          "response": []
+            }
+          }
         }
-      ],
-      "description": "Endpoints para monitoramento da aplicação, telemetria e integração com Azure Event Hub"
-    },
-    {
-      "name": "🏥 Health Check",
-      "item": [
-        {
-          "name": "Status da Aplicação",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/actuator/health",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "actuator",
-                "health"
-              ]
-            },
-            "description": "**Endpoint padrão do Spring Boot Actuator**\n\n❤️ **Health Check básico:**\n- Status geral da aplicação\n- Conectividade com banco de dados\n- Status dos componentes principais\n\n**Respostas:**\n- `UP`: Aplicação saudável\n- `DOWN`: Problemas detectados\n\n**Uso:**\n- Load balancer health check\n- Monitoramento de infraestrutura\n- Alerts automáticos"
-          },
-          "response": []
-        },
-        {
-          "name": "Informações da Aplicação",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/actuator/info",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "actuator",
-                "info"
-              ]
-            },
-            "description": "**Informações técnicas da aplicação**\n\nℹ️ **Dados expostos:**\n- Versão da aplicação\n- Informações de build\n- Profile ativo\n- Configurações gerais\n\n**Uso:**\n- Verificação de versão deployada\n- Informações de debug\n- Documentação técnica"
-          },
-          "response": []
-        }
-      ],
-      "description": "Endpoints básicos de saúde e informações da aplicação (Spring Boot Actuator)"
+      ]
     }
   ],
   "variable": [
     {
       "key": "base_url",
       "value": "http://localhost:8080",
-      "type": "string",
-      "description": "URL base da API (local development)"
-    },
-    {
-      "key": "base_url_prod",
-      "value": "https://your-app.azurewebsites.net",
-      "type": "string",
-      "disabled": true,
-      "description": "URL base da API (production)"
-    }
-  ],
-  "event": [
-    {
-      "listen": "prerequest",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          "// Script para configuração automática",
-          "console.log('🚀 Executando API Simulador de Empréstimos');",
-          "console.log('📖 Documentação: http://localhost:8080/swagger-ui.html');"
-        ]
-      }
-    },
-    {
-      "listen": "test",
-      "script": {
-        "type": "text/javascript",
-        "exec": [
-          "// Testes básicos automáticos",
-          "pm.test('Status code é 200 ou 201', function () {",
-          "    pm.expect(pm.response.code).to.be.oneOf([200, 201]);",
-          "});",
-          "",
-          "pm.test('Response tem Content-Type JSON', function () {",
-          "    pm.expect(pm.response.headers.get('Content-Type')).to.include('application/json');",
-          "});",
-          "",
-          "pm.test('Response time é menor que 5000ms', function () {",
-          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
-          "});"
-        ]
-      }
+      "type": "string"
     }
   ]
 }

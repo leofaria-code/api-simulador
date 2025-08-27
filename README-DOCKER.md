@@ -1,13 +1,13 @@
 # 🐳 Docker Setup - API Simulador Hackathon 2025
 
-## 🚀 Quick Start para o Hackathon
+## 🚀 Início rápido para o Hackathon
 
 ### Pré-requisitos
 - Docker Desktop instalado
 - PowerShell 5.1+ ou PowerShell Core
 - Arquivo `.env` configurado (copie de `.env.example`)
 
-### Execução Rápida
+### Execução rápida
 
 ```powershell
 # 1. Construir a aplicação
@@ -20,32 +20,31 @@
 ./docker-setup.ps1 test
 ```
 
-## 📋 Comandos Disponíveis
+## 📋 Comandos disponíveis
 
-| Comando | Descrição |
-|---------|-----------|
-| `./docker-setup.ps1 build` | Constrói a imagem Docker |
-| `./docker-setup.ps1 start` | Inicia a aplicação |
-| `./docker-setup.ps1 stop` | Para a aplicação |
-| `./docker-setup.ps1 restart` | Reinicia a aplicação |
-| `./docker-setup.ps1 logs` | Exibe logs em tempo real |
-| `./docker-setup.ps1 status` | Mostra status e saúde |
-| `./docker-setup.ps1 test` | Testa endpoints principais |
-| `./docker-setup.ps1 clean` | Limpa recursos Docker |
+| Comando                   | Descrição                       |
+|---------------------------|---------------------------------|
+| `./docker-setup.ps1 build`   | Constrói a imagem Docker         |
+| `./docker-setup.ps1 start`   | Inicia a aplicação               |
+| `./docker-setup.ps1 stop`    | Para a aplicação                 |
+| `./docker-setup.ps1 restart` | Reinicia a aplicação             |
+| `./docker-setup.ps1 logs`    | Exibe logs em tempo real         |
+| `./docker-setup.ps1 status`  | Mostra status e saúde            |
+| `./docker-setup.ps1 test`    | Testa endpoints principais       |
+| `./docker-setup.ps1 clean`   | Limpa recursos Docker            |
 
-## 🌐 URLs da Aplicação
+## 🌐 URLs da aplicação
 
 Após iniciar com sucesso:
 
 - **API Base**: http://localhost:8080
 - **Swagger UI**: http://localhost:8080/swagger-ui.html
 - **H2 Console**: http://localhost:8080/h2-console
-- **Health Check**: http://localhost:8080/actuator/health
-- **Postman Collection**: Importe `api-simulador-PostmanCollection.json`
+- **Coleção Postman**: Importe `api-simulador-PostmanCollection.json`
 
-## 📊 Endpoints Principais para Demonstração
+## 📊 Endpoints principais para demonstração
 
-### 1. Criar Simulação
+### 1. Criar simulação
 ```bash
 curl -X POST "http://localhost:8080/simulacoes" \
   -H "Content-Type: application/json" \
@@ -55,36 +54,31 @@ curl -X POST "http://localhost:8080/simulacoes" \
   }'
 ```
 
-### 2. Listar Simulações
+### 2. Listar simulações
 ```bash
 curl -X GET "http://localhost:8080/simulacoes?pagina=1&tamanho=10"
 ```
 
-### 3. EventHub Status
+### 3. Volume simulado por dia
 ```bash
-curl -X GET "http://localhost:8080/monitoramento/eventhub-status"
+curl -X GET "http://localhost:8080/simulacoes/dia?data=2025-08-25"
 ```
 
 ### 4. Telemetria
 ```bash
-curl -X GET "http://localhost:8080/monitoramento/telemetria"
+curl -X GET "http://localhost:8080/monitoramento/telemetria?dataReferencia=2025-08-25"
 ```
 
-## 🔧 Configuração de Ambiente
+## 🔧 Configuração de ambiente
 
 O arquivo `.env` deve conter:
 
 ```properties
 # Azure SQL Server
-DB_URL=your_azure_sql_server.database.windows.net
-DB_USERNAME=your_username
-DB_PASSWORD=your_password
-DB_NAME=your_database
-
-# Azure Event Hub
-AZURE_EVENTHUB_CONNECTION_STRING=your_connection_string
-AZURE_EVENTHUB_ENTITY_PATH=simulacoes
-AZURE_EVENTHUB_NAME=simulacoes
+DB_URL=seu_sql_server.database.windows.net
+DB_USERNAME=seu_usuario
+DB_PASSWORD=sua_senha
+DB_NAME=seu_banco
 
 # H2 (sempre funciona)
 H2_URL=jdbc:h2:mem:simulacao
@@ -94,33 +88,33 @@ H2_PASSWORD=password
 
 ## 🏗️ Arquitetura Docker
 
-### Multi-stage Build
-- **Stage 1**: Maven build em Alpine Linux
+### Multi-stage build
+- **Stage 1**: Build Maven em Alpine Linux
 - **Stage 2**: Runtime JRE otimizado
-- **Segurança**: Usuario não-root
+- **Segurança**: Usuário não-root
 - **Performance**: Cache de dependências Maven
 
-### Features de Produção
-- ✅ Health checks automáticos
-- ✅ Logs estruturados
-- ✅ Graceful shutdown
-- ✅ Resource limits
-- ✅ Timezone configurado (São Paulo)
-- ✅ JVM otimizada para containers
+### Recursos de produção
+- Health check automático
+- Logs estruturados
+- Graceful shutdown
+- Limite de recursos
+- Timezone configurado (São Paulo)
+- JVM otimizada para containers
 
 ## 🎯 Para o Hackathon
 
-### Cenário 1: Demonstração Local
+### Cenário 1: Demonstração local
 ```powershell
 ./docker-setup.ps1 build
 ./docker-setup.ps1 start
-# Acessar Swagger UI para demonstrar
+# Acesse o Swagger UI para demonstrar
 ```
 
-### Cenário 2: Teste Completo
+### Cenário 2: Teste completo
 ```powershell
 ./docker-setup.ps1 test
-# Executar Postman Collection
+# Execute a coleção Postman
 ```
 
 ### Cenário 3: Monitoramento
@@ -140,25 +134,25 @@ H2_PASSWORD=password
 ### Problema: Aplicação não inicia
 ```powershell
 ./docker-setup.ps1 logs
-# Verificar logs para diagnosticar
+# Verifique os logs para diagnosticar
 ```
 
 ### Problema: Conexão Azure falha
-- Verificar `.env` com credenciais corretas
-- Confirmar conectividade de rede
-- H2 sempre funciona como fallback
+- Verifique o `.env` com credenciais corretas
+- Confirme conectividade de rede
+- O H2 sempre funciona como fallback
 
-## 📦 Entrega para Hackathon
+## 📦 Entrega para o Hackathon
 
-### Arquivos Necessários
-- [x] `Dockerfile` - Optimizado e seguro
+### Arquivos necessários
+- [x] `Dockerfile` - Otimizado e seguro
 - [x] `docker-compose.yml` - Configuração completa
 - [x] `.dockerignore` - Exclusões adequadas
 - [x] `docker-setup.ps1` - Script de automação
 - [x] `README-DOCKER.md` - Este arquivo
 - [x] `.env.example` - Template de configuração
 
-### Comandos de Demonstração
+### Comandos de demonstração
 ```powershell
 # Setup inicial
 ./docker-setup.ps1 build
@@ -170,17 +164,17 @@ H2_PASSWORD=password
 # Navegue para http://localhost:8080/swagger-ui.html
 ```
 
-## 🏆 Benefícios da Containerização
+## 🏆 Benefícios da containerização
 
-1. **Portabilidade**: Roda em qualquer ambiente Docker
-2. **Consistência**: Mesmo comportamento em dev/prod
-3. **Isolamento**: Não interfere com outras aplicações
-4. **Escalabilidade**: Pronto para orquestração
-5. **Deploy Rápido**: Uma linha de comando
-6. **Rollback**: Versioning de imagens
+1. Portabilidade: roda em qualquer ambiente Docker
+2. Consistência: mesmo comportamento em dev e produção
+3. Isolamento: não interfere com outras aplicações
+4. Escalabilidade: pronto para orquestração
+5. Deploy rápido: um comando
+6. Rollback: versionamento de imagens
 
 ---
 
-**🎯 Ready for Hackathon! 🚀**
+**Pronto para o Hackathon! 🚀**
 
 *Desenvolvido para Hackathon 2025 - API Simulador de Empréstimos*

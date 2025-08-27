@@ -45,7 +45,6 @@ A **API Simulador de Empréstimos** é uma solução robusta desenvolvida para o
 - ✅ **Arquitetura Escalável**: Microserviços com múltiplas fontes de dados
 - ✅ **Observabilidade Completa**: Telemetria, métricas e monitoramento integrado
 - ✅ **Documentação Interativa**: Swagger/OpenAPI 3.0 completo
-- ✅ **Deploy Cloud-Ready**: Configurado para Azure com Docker
 
 ---
 
@@ -67,7 +66,6 @@ A **API Simulador de Empréstimos** é uma solução robusta desenvolvida para o
 - **Métricas de Performance**: Tempo de resposta por endpoint
 - **Volume de Operações**: Contadores de requisições
 - **Taxa de Sucesso**: Monitoramento de falhas
-- **Integração Azure**: Event Hub para telemetria
 
 ### 🛡️ **Segurança e Qualidade**
 - **Validação Robusta**: Bean Validation (JSR-303)
@@ -102,7 +100,6 @@ A **API Simulador de Empréstimos** é uma solução robusta desenvolvida para o
 - **Docker** - Containerização
 - **Docker Compose** - Orquestração local
 - **Maven** - Gerenciamento de dependências
-- **Azure** - Cloud hosting
 
 ---
 
@@ -200,9 +197,7 @@ Após a instalação, você pode testar a API de 3 formas:
 
 #### **2. 📁 Postman Collection (Recomendado para testes)**
 - Importe o arquivo: `api-simulador-PostmanCollection.json`
-- Coleção completa com **todos os endpoints**
-- **Testes automáticos** incluídos
-- Variables configuradas para dev e produção
+- Coleção completa com **os endpoints**
 
 #### **3. 🔧 cURL (Para automação)**
 ```bash
@@ -306,11 +301,7 @@ docker-compose down
 🚀 **Coleção atualizada com todos os endpoints:**
 - ✅ **Simulações completas** - Criar, listar e analisar simulações
 - ✅ **Monitoramento avançado** - Telemetria e métricas de performance
-- ✅ **Azure Event Hub** - Testes de conectividade e status
-- ✅ **Health checks** - Endpoints do Spring Actuator
 - ✅ **Documentação completa** - Descrições detalhadas de cada endpoint
-- ✅ **Testes automáticos** - Scripts de validação incluídos
-- ✅ **Variáveis de ambiente** - Configuração para dev e produção
 
 📥 **Para importar no Postman:**
 1. Abra o Postman
@@ -328,24 +319,17 @@ docker-compose down
 |--------|----------|-----------|------------|------|
 | `POST` | `/simulacoes` | Criar nova simulação | `valorDesejado`, `prazo` | - |
 | `GET` | `/simulacoes` | Listar simulações (paginado) | `pagina`, `tamanho` | - |
-| `GET` | `/simulacoes/dia/{data}` | Volume por data específica | `data` (path) | - |
+| `GET` | `/simulacoes/dia` | Volume por data específica | `data` (query) | - |
 
 ### 📊 **Monitoramento e Telemetria**
 
 | Método | Endpoint | Descrição | Parâmetros | Auth |
 |--------|----------|-----------|------------|------|
 | `GET` | `/monitoramento/telemetria` | Métricas da aplicação | `dataReferencia` | - |
-| `GET` | `/monitoramento/eventhub-status` | Status do Azure Event Hub | - | - |
-| `POST` | `/monitoramento/test-eventhub` | Testar conexão Event Hub | - | - |
 
-### 🔍 **Health & Metrics**
+---
 
-| Método | Endpoint | Descrição | Auth |
-|--------|----------|-----------|------|
-| `GET` | `/actuator/health` | Status da aplicação | - |
-| `GET` | `/actuator/metrics` | Métricas detalhadas | - |
-
-### **Exemplos de Uso**
+## **Exemplos de Uso**
 
 #### **📝 Criar Simulação**
 
@@ -367,20 +351,13 @@ curl "http://localhost:8080/simulacoes?pagina=0&tamanho=50"
 #### **📅 Volume por Data**
 
 ```bash
-curl "http://localhost:8080/simulacoes/dia/2025-08-25"
+curl "http://localhost:8080/simulacoes/dia?data=2025-08-25"
 ```
 
-#### **📊 Telemetria e Monitoramento**
+#### **📊 Telemetria**
 
 ```bash
-# Obter telemetria formatada
 curl "http://localhost:8080/monitoramento/telemetria?dataReferencia=2025-08-25"
-
-# Verificar status do Azure Event Hub
-curl "http://localhost:8080/monitoramento/eventhub-status"
-
-# Testar conexão com Event Hub
-curl -X POST "http://localhost:8080/monitoramento/test-eventhub"
 ```
 
 ---
@@ -404,43 +381,7 @@ curl http://localhost:8080/actuator/info
 curl "http://localhost:8080/monitoramento/telemetria?dataReferencia=2025-08-25"
 ```
 
-### **Azure Event Hub Integration**
-
-```bash
-# Status da integração
-curl "http://localhost:8080/monitoramento/eventhub-status"
-
-# Teste de conectividade
-curl -X POST "http://localhost:8080/monitoramento/test-eventhub" \
-  -H "Content-Type: application/json"
-```
-
-**Resposta de exemplo (Event Hub funcionando):**
-```json
-{
-  "status": "SUCCESS",
-  "message": "Mensagem de teste enviada com sucesso para Azure Event Hub",
-  "timestamp": "2025-08-25T10:30:00.123456",
-  "eventhub_configured": true
-}
-```
-
----
-
 ## 🧪 Testes
-
-### **Executar Testes**
-
-```bash
-# Todos os testes
-mvn test
-
-# Testes específicos
-mvn test -Dtest=SimulacaoServiceTest
-
-# Testes com relatório
-mvn test jacoco:report
-```
 
 ### **Testes Automatizados**
 
@@ -489,95 +430,7 @@ pm.test('Simulação retorna SAC e PRICE', function () {
 });
 ```
 
-#### **Variáveis disponíveis:**
-- `base_url` - URL da API (dev: localhost:8080)
-- `base_url_prod` - URL de produção (Azure)
-
 💡 **Dica**: Use o **Collection Runner** do Postman para executar todos os testes de uma vez e gerar relatórios automatizados!
-
----
-
-## 🚀 Deploy
-
-### **Azure App Service**
-
-1. **Criar Resource Group**
-```bash
-az group create --name hackathon-rg --location brazilsouth
-```
-
-2. **Criar App Service Plan**
-```bash
-az appservice plan create --name hackathon-plan --resource-group hackathon-rg --sku B1 --is-linux
-```
-
-3. **Deploy da Aplicação**
-```bash
-az webapp create --resource-group hackathon-rg --plan hackathon-plan --name api-simulador-hackathon --runtime "JAVA|17-java17"
-```
-
-### **Azure Container Instances**
-
-```bash
-# Build e push para Azure Container Registry
-az acr build --registry myregistry --image api-simulador:latest .
-
-# Deploy no ACI
-az container create --resource-group hackathon-rg --name api-simulador --image myregistry.azurecr.io/api-simulador:latest
-```
-
-### **Variáveis de Ambiente - Produção**
-
-Configurar no Azure Portal ou via CLI:
-
-```bash
-az webapp config appsettings set --resource-group hackathon-rg --name api-simulador-hackathon --settings \
-  "DB_URL=servidor.database.windows.net" \
-  "DB_USERNAME=usuario" \
-  "DB_PASSWORD=senha" \
-  "AZURE_EVENTHUB_CONNECTION_STRING=conexao"
-```
-
----
-
-## 📈 Performance e Escalabilidade
-
-### **Configurações de Performance**
-
-- **Pool de Conexões**: HikariCP otimizado
-- **Cache JPA**: Second-level cache configurado  
-- **Lazy Loading**: Queries otimizadas
-- **Paginação**: Limitação de resultados
-
-### **Métricas de Performance**
-
-- **Tempo de Resposta**: < 200ms para simulações
-- **Throughput**: > 1000 req/s
-- **Memória**: 512MB máximo (container)
-- **CPU**: 2 cores recomendados
-
----
-
-## 🤝 Contribuição
-
-### **Como Contribuir**
-
-1. **Fork** o projeto
-2. **Crie** uma branch feature (`git checkout -b feature/AmazingFeature`)
-3. **Commit** suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. **Push** para a branch (`git push origin feature/AmazingFeature`)
-5. **Abra** um Pull Request
-
-### **Padrões de Código**
-
-- ✅ **Java Code Style**: Google Java Style Guide
-- ✅ **Commits**: Conventional Commits
-- ✅ **Documentação**: JavaDoc obrigatório
-- ✅ **Testes**: Cobertura mínima 80%
-
-### **Issues e Bugs**
-
-Use os templates disponíveis em `.github/ISSUE_TEMPLATE/`
 
 ---
 
@@ -596,24 +449,5 @@ Este projeto está licenciado sob a **Apache License 2.0** - veja o arquivo [LIC
 [![GitHub](https://img.shields.io/badge/GitHub-leofaria--code-black?style=for-the-badge&logo=github)](https://github.com/leofaria-code)
 [![Email](https://img.shields.io/badge/Email-leofaria.email@gmail.com-red?style=for-the-badge&logo=gmail)](mailto:leofaria.email@gmail.com)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-Profile-blue?style=for-the-badge&logo=linkedin)](https://www.linkedin.com/in/leofaria-code)
-
-</div>
-
----
-
-## 🙏 Agradecimentos
-
-- **Hackathon Team** - Pela oportunidade e desafio
-- **Spring Community** - Pelo framework excepcional  
-- **Azure Team** - Pela infraestrutura cloud
-- **Open Source Community** - Pelas bibliotecas utilizadas
-
----
-
-<div align="center">
-
-**⭐ Se este projeto foi útil, deixe uma estrela!**
-
-**🚀 Desenvolvido com ❤️ para o Hackathon 2024**
 
 </div>
