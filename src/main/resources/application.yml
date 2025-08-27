@@ -1,7 +1,29 @@
 # Configuração Geral
 server:
   port: ${SERVER_PORT:8080}
+  # Timeouts otimizados para rede estável
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  tomcat:
+    connection-timeout: 20000     # 20s timeout (reduzido)
+    keep-alive-timeout: 20000     # 20s keep-alive (reduzido)
+    max-keep-alive-requests: 200  # Mais requests por conexão
+    uri-encoding: UTF-8
 
+# Configuração da aplicação
+app:
+  timezone: ${APP_TIMEZONE:America/Sao_Paulo}
+  charset: ${APP_CHARSET:UTF-8}
+  
+  # Configurações do cache de produtos
+  cache:
+    produtos:
+      ttl-minutes: ${CACHE_PRODUTOS_TTL:15}        # Cache válido por 15 minutos
+      refresh-interval: ${CACHE_REFRESH_INTERVAL:300000}  # Atualização a cada 5 minutos
+      use-fallback: ${CACHE_USE_FALLBACK:true}     # Usar cache expirado como fallback
 spring:
   application:
     name: api-simulador
@@ -9,20 +31,50 @@ spring:
   main:
     banner-mode: off
 
-  # Configuração SQL Server
+  # Configuração de Charset/Encoding
+  servlet:
+    multipart:
+      file-size-threshold: 1KB
+  web:
+    locale: pt_BR
+    locale-resolver: fixed
+
+  # Configuração SQL Server - Otimizada para Azure SQL
   datasource:
     principal-sqlserver:
-      jdbc-url: jdbc:sqlserver://${DB_URL}:${DB_PORT};databaseName=${DB_NAME};encrypt=true;trustServerCertificate=true;hostNameInCertificate=*.database.windows.net;loginTimeout=30;
+      jdbc-url: jdbc:sqlserver://${DB_URL}:${DB_PORT};databaseName=${DB_NAME};encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=60;socketTimeout=120000;queryTimeout=120;connectRetryInterval=10;connectRetryCount=5;packetSize=4096;sendTimeAsDatetime=false;lastUpdateCount=false;sslProtocol=TLSv1.2;applicationIntent=ReadWrite;multiSubnetFailover=true;lockTimeout=60000;authentication=SqlPassword;integratedSecurity=false;
       username: ${DB_USERNAME}
       password: ${DB_PASSWORD}
       driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
       type: com.zaxxer.hikari.HikariDataSource
       hikari:
-        maximum-pool-size: 20
-        minimum-idle: 5
-        connection-timeout: 60000
-        idle-timeout: 300000
-        max-lifetime: 1200000
+        maximum-pool-size: 3       # Pool reduzido para evitar timeout
+        minimum-idle: 0            # Sem conexões idle iniciais
+        connection-timeout: 60000  # 60s timeout para Azure
+        idle-timeout: 180000       # 3min idle timeout (reduzido)
+        max-lifetime: 900000       # 15min lifetime (reduzido)
+        # Configurações específicas para Azure SQL
+        validation-timeout: 15000  # 15s para validar conexão
+        leak-detection-threshold: 90000  # 1.5min leak detection
+        connection-test-query: SELECT 1
+        # Configurações para robustez com Azure
+        keep-alive-time: 180000    # 3min keep-alive
+        pool-name: "AzureSQLPool"
+        # Inicialização tolerante a falhas
+        initialization-fail-timeout: -1  # Não falhar na inicialização
+        # Configurações de isolamento
+        transaction-isolation: TRANSACTION_READ_COMMITTED
+        # Configurações para reconexão automática
+        register-mbeans: false
+        # Propriedades específicas do SQL Server
+        data-source-properties:
+          socketTimeout: 120000    # 2min socket timeout
+          loginTimeout: 60000      # 60s login timeout
+          lockTimeout: 60000       # 60s lock timeout  
+          queryTimeout: 120000     # 2min query timeout
+          trustStore: ""
+          trustStorePassword: ""
+          keyStoreAuthentication: "JavaKeyStorePassword"
 
   # Configuração H2
   second-datasource:
@@ -43,41 +95,102 @@ spring:
 
   # Configuração JPA
   jpa:
-    database-platform: org.hibernate.dialect.SQLServerDialect
     show-sql: ${SHOW_SQL:false}
+    open-in-view: false
     properties:
       hibernate:
         format_sql: true
-
+        connection:
+          handling_mode: delayed_acquisition_and_release_after_transaction
+          acquisition_timeout: 15000  # Reduzido para 15s
+          release_mode: after_transaction
+        jdbc:
+          batch_size: 30           # Aumentado para melhor performance
+        order_inserts: true
+        order_updates: true
+        generate_statistics: false
+        enable_lazy_load_no_trans: false
+        # Configurações adicionais para performance
+        cache:
+          '[use_second_level_cache]': false
+          '[use_query_cache]': false
     hibernate:
       ddl-auto: none
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
 
   sql:
     init:
       mode: never
+
+  # Configuração de Transação
+  transaction:
+    rollback-on-commit-failure: true
+    default-timeout: 20            # Reduzido para 20s
+    
+  # Configuração JTA (se necessário)
+  jta:
+    enabled: false
+
+  # Configurações otimizadas para rede estável
+  task:
+    execution:
+      pool:
+        core-size: 4              # Aumentado
+        max-size: 10              # Aumentado
+        queue-capacity: 200       # Aumentado
+    scheduling:
+      pool:
+        size: 4                   # Aumentado
+
+# Configuração de Logs (otimizada para rede estável)
+logging:
+  level:
+    '[com.zaxxer.hikari]': INFO     # Menos verboso
+    '[com.zaxxer.hikari.pool.HikariPool]': INFO
+    '[com.zaxxer.hikari.pool.PoolBase]': INFO
+    '[com.microsoft.sqlserver]': INFO
+    '[org.hibernate.SQL]': ${SHOW_SQL:false}
+    '[br.com.leo.apisimulador]': INFO
+    root: INFO
 
 # Configuração de Monitoramento
 management:
   endpoints:
     web:
       exposure:
-        include: health,prometheus,metrics
+        include: health,metrics
   endpoint:
     health:
       show-details: always
     metrics:
       access: UNRESTRICTED
-    prometheus:
-      access: UNRESTRICTED
 
-# Configuração do Azure Event Hub
+# Configuração do Swagger/OpenAPI
+springdoc:
+  api-docs:
+    enabled: true 
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    try-it-out-enabled: true
+    operations-sorter: alpha
+    tags-sorter: alpha
+    display-request-duration: true
+    show-extensions: true
+    show-common-extensions: true
+    default-models-expand-depth: -1
+    default-model-expand-depth: -1
+  show-actuator: false
+  writer-with-default-pretty-printer: true
+  group-configs:
+    - group: 'all'
+      display-name: 'API Completa'
+      paths-to-match: '/**'
+
 azure:
   eventhub:
     connection-string: ${AZURE_EVENTHUB_CONNECTION_STRING}
     entity-path: ${AZURE_EVENTHUB_ENTITY_PATH}
     name: ${AZURE_EVENTHUB_NAME}
     enabled: true
-
-logging:
-  level:
-    org.hibernate.SQL: ${SHOW_SQL:false}

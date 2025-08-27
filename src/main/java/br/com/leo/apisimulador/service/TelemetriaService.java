@@ -1,7 +1,8 @@
 package br.com.leo.apisimulador.service;
 
-import br.com.leo.apisimulador.dto.TelemetriaEndpointDTO;
-import br.com.leo.apisimulador.dto.TelemetriaResponseDTO;
+import br.com.leo.apisimulador.dto.telemetria.TelemetriaEndpointDTO;
+import br.com.leo.apisimulador.dto.telemetria.TelemetriaInfoAplicacaoDTO;
+import br.com.leo.apisimulador.dto.telemetria.TelemetriaResponseDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -126,7 +127,10 @@ public class TelemetriaService {
             }
         }
 
-        return new TelemetriaResponseDTO(dataReferencia, endpoints);
+        // Criar informações da aplicação
+        TelemetriaInfoAplicacaoDTO infoAplicacao = new TelemetriaInfoAplicacaoDTO("api-simulador", "1.0.0");
+
+        return new TelemetriaResponseDTO(dataReferencia, infoAplicacao, endpoints);
     }
 
     /**

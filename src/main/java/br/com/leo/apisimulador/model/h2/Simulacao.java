@@ -31,7 +31,6 @@ public class Simulacao {
     @Column(name = "RESULTADO_JSON", columnDefinition = "TEXT")
     private String resultadoJson;
 
-    // Relacionamento com Produto (transient para não persistir no H2)
     @Transient
     private Produto produto;
 }

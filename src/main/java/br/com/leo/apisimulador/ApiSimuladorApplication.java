@@ -7,6 +7,8 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration;
 import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
+import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 // Excluir as classes de autoconfiguração de DataSource e Hibernate
 @SpringBootApplication(exclude = {
@@ -18,6 +20,8 @@ import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfigurat
         "br.com.leo.apisimulador.model.h2",
         "br.com.leo.apisimulador.model.sqlserver"
 })
+@EnableAsync
+@EnableScheduling
 public class ApiSimuladorApplication {
 
     public static void main(String[] args) {
